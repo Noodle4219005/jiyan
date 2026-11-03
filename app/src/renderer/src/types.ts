@@ -14,6 +14,13 @@ export type Insights = {
   action_items?: { t: number; text: string; speaker?: string }[]
 }
 export type Settings = { harness: 'claude' | 'codex' | 'pi' | 'custom'; model: string; extra: string; custom: string; lang: 'auto' | 'en' | 'zh-TW' }
+export type UsageAgg = { calls: number; input: number; output: number; cacheRead: number; cost: number; estimated: boolean }
+export type UsageRow = { key: string; calls: number; input: number; output: number; cost: number; estimated: boolean }
+export type UsageSummary = {
+  today: UsageAgg; week: UsageAgg; all: UsageAgg
+  byPurpose: UsageRow[]; byRecording: UsageRow[]; byModel: UsageRow[]
+  recent: { ts: number; purpose: string; harness: string; input: number; output: number; cost: number | null; est: boolean; ms: number }[]
+}
 export type SetupStatus = { uv: string | null; ffmpeg: string | null; venv: boolean; speakerModels: boolean; whisper: boolean; root: string; mcp: string; harness: { claude: boolean; codex: boolean; pi: boolean } }
 export type SetupEvent = { steps: StepInfo[]; status: 'running' | 'done' | 'error'; message?: string }
 export type Thumbs = { dir: string; step: number }
@@ -37,6 +44,7 @@ declare global {
       makeThumbs: (id: string) => Promise<void>
       exportText: (content: string, name: string, ext: string) => Promise<string | null>
       exportPng: (dataUrl: string, name: string) => Promise<string | null>
+      usageSummary: () => Promise<UsageSummary>
       setupStatus: () => Promise<SetupStatus>
       setupRun: () => Promise<void>
       onSetup: (cb: (e: SetupEvent) => void) => () => void

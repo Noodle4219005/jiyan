@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('api', {
   makeThumbs: (id: string) => ipcRenderer.invoke('thumbs:make', id),
   exportText: (c: string, n: string, e: string) => ipcRenderer.invoke('export:text', c, n, e),
   exportPng: (d: string, n: string) => ipcRenderer.invoke('export:png', d, n),
+  usageSummary: () => ipcRenderer.invoke('usage:summary'),
   setupStatus: () => ipcRenderer.invoke('setup:status'),
   setupRun: () => ipcRenderer.invoke('setup:run'),
   onSetup: (cb: (e: unknown) => void) => {

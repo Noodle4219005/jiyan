@@ -6,10 +6,11 @@ import { NotesEditor, TranscriptPane } from './Proofread'
 import { Card, dur, H3, rowCls, SpkLine, Steps, Time } from './Parts'
 import SettingsDialog from './Settings'
 import SetupDialog, { setupReady } from './SetupDialog'
+import UsageDialog, { fmtCost, fmtTok } from './UsageDialog'
 import { cueLabel, toCues, toSrt, toVtt, type SubOpts } from './subtitles'
 import SubtitlesPanel, { slug } from './SubtitlesPanel'
 import Timeline, { KIND_LABEL, TYPE_COLOR, TYPE_LABEL, mediaUrl, mmss, renderTimelinePng, spkColor, thumbUrl } from './Timeline'
-import type { Insights, Loaded, Meta, PipelineEvent } from './types'
+import type { Insights, Loaded, Meta, PipelineEvent, UsageSummary } from './types'
 
 const STAGE: Record<string, string> = { new: 'Not processed', transcribed: 'Transcribed', diarized: 'Speakers found', done: 'Ready' }
 const TABS = [['summary', 'Summary'], ['transcript', 'Transcript'], ['highlights', 'Highlights & tasks'], ['subtitles', 'Subtitles']] as const
@@ -32,6 +33,9 @@ export default function App(): React.JSX.Element {
   const [typeFilter, setTypeFilter] = useState<string | null>(null)
   const [showSettings, setShowSettings] = useState(false)
   const [showSetup, setShowSetup] = useState(false)
+  const [showUsage, setShowUsage] = useState(false)
+  const [usage, setUsage] = useState<UsageSummary | null>(null)
+  const refreshUsage = useCallback(async () => setUsage(await window.api.usageSummary()), [])
   const [verr, setVerr] = useState('')
   const [kind, setKind] = useState('meeting')
   const [editing, setEditing] = useState<string | null>(null)
@@ -61,20 +65,21 @@ export default function App(): React.JSX.Element {
     if (l.transcript?.turns?.length && !l.namesChecked && !busyRef.current[id]) void autoNames(id, true)
   }, [])
 
+  useEffect(() => { void refreshUsage(); const h = setInterval(() => void refreshUsage(), 10000); return () => clearInterval(h) }, [refreshUsage])
   useEffect(() => { void window.api.setupStatus().then((s) => { if (!setupReady(s)) setShowSetup(true) }) }, [])
   useEffect(() => {
     void refresh()
     return window.api.onPipeline((e) => {
       busyRef.current[e.id] = e.status === 'running' || e.status === 'paused'
       setProgress((p) => ({ ...p, [e.id]: { ...e, steps: e.steps ?? p[e.id]?.steps, stepPct: e.stepPct === undefined ? p[e.id]?.stepPct : e.stepPct } }))
-      if (e.status !== 'running' && e.status !== 'paused') void refresh()
+      if (e.status !== 'running' && e.status !== 'paused') { void refresh(); void refreshUsage() }
       if (e.status === 'done' && curId.current === e.id) {
         const tl = /^Translating subtitles to (.+)$/.exec(e.steps?.[0]?.name ?? '')
         const pr = e.steps?.[0]?.name === 'Proofreading with AI'
         void open(e.id).then(() => { if (tl) { setSubSel(`both:${tl[1]}`); setTab('subtitles') } if (pr) setTab('transcript') })
       }
     })
-  }, [refresh, open])
+  }, [refresh, open, refreshUsage])
 
   const cues = useMemo(() => (cur?.transcript ? toCues(cur.transcript.segments) : []), [cur?.transcript])
   const [mode, lang] = subSel.split(':') as ['orig' | 'trans' | 'both', string | undefined]
@@ -207,6 +212,11 @@ export default function App(): React.JSX.Element {
           ))}
         </div>
         <div className="border-t border-line p-2">
+          <button className="mb-2 flex w-full items-center justify-between rounded-md border border-line px-3 py-1.5 text-left text-xs text-muted transition hover:bg-panel2 hover:text-slate-200"
+            title="AI token usage — click for details" onClick={() => setShowUsage(true)}>
+            <span>AI tokens today</span>
+            <span className="tabular-nums text-slate-200">{usage ? `${usage.today.estimated ? '~' : ''}${fmtTok(usage.today.input + usage.today.output)}${usage.today.cost > 0 ? ` · ${fmtCost(usage.today.cost)}` : ''}` : '…'}</span>
+          </button>
           <button className="btn w-full" onClick={() => setShowSettings(true)}>⚙ Settings</button>
         </div>
       </aside>
@@ -440,7 +450,7 @@ export default function App(): React.JSX.Element {
                   <TranscriptPane id={cur.meta.id} segs={tr.segments} names={names} speakers={spkStats.map(([s]) => s)} now={now}
                     q={q} setQ={setQ} seek={seek} onEdit={editSegment} onReplaceAll={replaceAll}
                     onEditMany={async (idxs, patch) => { await window.api.editSegments(cur.meta.id, idxs, patch); await reload() }}
-                    suggestions={cur.suggestions ?? []} terms={cur.terms ?? ''} aiBusy={busyOf(cur.meta.id)}
+                    suggestions={cur.suggestions ?? []} terms={cur.terms ?? ''} aiBusy={busyOf(cur.meta.id)} aiPct={prog?.stepPct} onAiCancel={() => void window.api.cancel(cur.meta.id)}
                     onAiRun={(terms) => void window.api.proofreadRun(cur.meta.id, terms)}
                     onResolve={async (accept, dismiss) => { await window.api.proofreadResolve(cur.meta.id, accept, dismiss); await reload() }} />
                 )}
@@ -491,6 +501,7 @@ export default function App(): React.JSX.Element {
         )}
       </main>
       <Chat id={cur?.meta.id ?? null} title={cur?.meta.title ?? ''} ready={!!cur?.transcript} getNow={() => video.current?.currentTime ?? 0} onSeek={cur ? seek : undefined} />
+      {showUsage && <UsageDialog onClose={() => setShowUsage(false)} />}
       {showSetup && <SetupDialog onClose={() => setShowSetup(false)} />}
       {showSettings && <SettingsDialog onOpenSetup={() => { setShowSettings(false); setShowSetup(true) }} onClose={() => setShowSettings(false)} onFolderChanged={() => { setCur(null); curId.current = null; void refresh() }} />}
     </div>

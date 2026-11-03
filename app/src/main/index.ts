@@ -82,6 +82,12 @@ const ffmpegLine = (dur: number, cb: (f: number) => void) => (l: string): void =
   if (m && dur > 0) cb(Math.min(Number(m[1]) / 1e6 / dur, 1))
 }
 
+const USAGE_LOG = join(CFG_DIR, 'usage.jsonl')
+/** Environment for every AI call: which assistant to use, and where harness.py appends token usage. */
+const llmEnv = (rec: string | null, purpose: string, settings: object = getSettings()): NodeJS.ProcessEnv => ({
+  MEETING_HARNESS: JSON.stringify(settings), JIYAN_USAGE_LOG: USAGE_LOG, JIYAN_REC: rec ?? '', JIYAN_PURPOSE: purpose
+})
+
 const SETTINGS = join(CFG_DIR, 'settings.json')
 if (!existsSync(SETTINGS) && existsSync(join(DATA, 'settings.json'))) copyFileSync(join(DATA, 'settings.json'), SETTINGS)
 const defaultSettings = { harness: 'claude', model: '', extra: '', custom: '', lang: 'auto' }
@@ -173,7 +179,7 @@ async function runPipeline(win: BrowserWindow, id: string): Promise<void> {
     for (const [file, label, args] of todo) {
       report(label)
       await runCmd('uv', ['run', 'python', ...args(dir(id), meta.source, meta.kind ?? 'meeting')], {
-        cwd: ROOT, env: { MEETING_HARNESS: JSON.stringify(getSettings()) }, id, step: label,
+        cwd: ROOT, env: llmEnv(id, file === 'names.json' ? 'names' : file === 'insights.json' ? 'summary' : 'pipeline'), id, step: label,
         onLine: (l) => { const p = /^PROGRESS ([\d.]+)/.exec(l); if (p) report(label, Number(p[1])) }
       }).catch((e) => { throw new Error(`${label} failed: ${e.message}`) })
       if (file === 'names.json') applyNameSuggestions(id)
@@ -211,7 +217,7 @@ async function runTranslate(win: BrowserWindow, id: string, lang: string, cues: 
     writeFileSync(inp, JSON.stringify(cues))
     send({ step: name, status: 'running', stepPct: 0, steps: plan })
     await runCmd('uv', ['run', 'python', 'translate.py', inp, join(transDir(id), `${langSlug(lang)}.json`), lang], {
-      cwd: ROOT, env: { MEETING_HARNESS: JSON.stringify(getSettings()) }, id, step: name,
+      cwd: ROOT, env: llmEnv(id, 'translate'), id, step: name,
       onLine: (l) => { const p = /^PROGRESS ([\d.]+)/.exec(l); if (p) send({ step: name, status: 'running', stepPct: Number(p[1]), steps: plan }) }
     })
     rmSync(inp, { force: true })
@@ -276,6 +282,39 @@ async function setupRun(win: BrowserWindow): Promise<void> {
     send({ status: 'done' })
   } catch (e) {
     send({ status: 'error', message: String(e).slice(0, 800) })
+  }
+}
+
+// ───── token usage: harness.py appends one JSON line per AI call to usage.jsonl ─────
+type UsageRec = { ts: number; rec: string; purpose: string; harness: string; model: string; in: number; out: number; cache_read: number; cache_write: number; cost: number | null; est: boolean; ms: number }
+function usageSummary(): object {
+  const rows: UsageRec[] = existsSync(USAGE_LOG)
+    ? readFileSync(USAGE_LOG, 'utf8').split('\n').filter(Boolean).flatMap((l) => { try { return [JSON.parse(l) as UsageRec] } catch { return [] } })
+    : []
+  const sod = new Date(); sod.setHours(0, 0, 0, 0)
+  const agg = (rs: UsageRec[]): { calls: number; input: number; output: number; cacheRead: number; cost: number; estimated: boolean } => ({
+    calls: rs.length,
+    input: rs.reduce((s, r) => s + r.in + r.cache_read + r.cache_write, 0),
+    output: rs.reduce((s, r) => s + r.out, 0),
+    cacheRead: rs.reduce((s, r) => s + r.cache_read, 0),
+    cost: rs.reduce((s, r) => s + (r.cost ?? 0), 0),
+    estimated: rs.some((r) => r.est)
+  })
+  const by = (key: (r: UsageRec) => string): { key: string; calls: number; input: number; output: number; cost: number; estimated: boolean }[] => {
+    const m = new Map<string, UsageRec[]>()
+    for (const r of rows) m.set(key(r), [...(m.get(key(r)) ?? []), r])
+    return [...m].map(([k, rs]) => ({ key: k, ...agg(rs) })).sort((a, b) => b.input + b.output - (a.input + a.output))
+  }
+  const titles: Record<string, string> = {}
+  for (const mm of listMeetings()) titles[mm.id] = mm.title
+  return {
+    today: agg(rows.filter((r) => r.ts * 1000 >= sod.getTime())),
+    week: agg(rows.filter((r) => r.ts * 1000 >= Date.now() - 7 * 864e5)),
+    all: agg(rows),
+    byPurpose: by((r) => r.purpose),
+    byRecording: by((r) => (r.rec ? (titles[r.rec] ?? r.rec) : '(not tied to a recording)')),
+    byModel: by((r) => `${r.harness} · ${r.model}`),
+    recent: rows.slice(-12).reverse().map((r) => ({ ts: r.ts, purpose: r.purpose, harness: r.harness, input: r.in + r.cache_read + r.cache_write, output: r.out, cost: r.cost, est: r.est, ms: r.ms }))
   }
 }
 
@@ -367,7 +406,7 @@ ${hist.slice(-10).map((h) => `${h.role === 'user' ? 'User' : 'Assistant'}: ${h.t
 ${scope === 'this' && at !== undefined ? `\n(The user's player is currently at [${mm(at)}].)` : ''}
 User: ${message}`
   const reply = await runCmd('uv', ['run', 'python', 'harness.py', '--chat', cwd], {
-    cwd: ROOT, input: prompt, env: { MEETING_HARNESS: JSON.stringify(getSettings()) }
+    cwd: ROOT, input: prompt, env: llmEnv(scope === 'all' ? null : id, 'chat')
   })
   const now = Date.now()
   const next = [...hist, { role: 'user' as const, text: message, at: now, scope }, { role: 'assistant' as const, text: reply.trim(), at: Date.now() }]
@@ -388,7 +427,7 @@ async function runProofread(win: BrowserWindow, id: string, terms: string): Prom
     writeFileSync(join(dir(id), 'terms.txt'), terms)
     send({ step: name, status: 'running', stepPct: 0, steps: plan })
     await runCmd('uv', ['run', 'python', 'proofread.py', join(dir(id), 'spk.json'), join(dir(id), 'proofread.json'), '--terms', terms], {
-      cwd: ROOT, env: { MEETING_HARNESS: JSON.stringify(getSettings()) }, id, step: name,
+      cwd: ROOT, env: llmEnv(id, 'proofread'), id, step: name,
       onLine: (l) => { const p = /^PROGRESS ([\d.]+)/.exec(l); if (p) send({ step: name, status: 'running', stepPct: Number(p[1]), steps: plan }) }
     })
     plan[0].state = 'done'; plan[0].end = Date.now()
@@ -475,13 +514,15 @@ function createWindow(): void {
     const t0 = Date.now()
     try {
       const out = await runCmd('uv', ['run', 'python', 'harness.py', 'Reply with just the two letters OK'], {
-        cwd: ROOT, env: { MEETING_HARNESS: JSON.stringify({ ...defaultSettings, ...s }) }
+        cwd: ROOT, env: llmEnv(null, 'test', { ...defaultSettings, ...s })
       })
       return { ok: true, ms: Date.now() - t0, text: out.trim().slice(0, 200) }
     } catch (e) {
       return { ok: false, ms: Date.now() - t0, text: String(e).slice(0, 600) }
     }
   })
+  ipcMain.removeHandler('usage:summary')
+  ipcMain.handle('usage:summary', () => usageSummary())
   ipcMain.removeHandler('setup:status')
   ipcMain.handle('setup:status', () => setupStatus())
   ipcMain.removeHandler('setup:run')
@@ -605,7 +646,7 @@ function createWindow(): void {
   ipcMain.removeHandler('speakers:suggest')
   ipcMain.handle('speakers:suggest', async (_e, id: string) => {
     try {
-      await runCmd('uv', ['run', 'python', 'name_speakers.py', join(dir(id), 'spk.json'), join(dir(id), 'names.json')], { cwd: ROOT, env: { MEETING_HARNESS: JSON.stringify(getSettings()) } })
+      await runCmd('uv', ['run', 'python', 'name_speakers.py', join(dir(id), 'spk.json'), join(dir(id), 'names.json')], { cwd: ROOT, env: llmEnv(id, 'names') })
       const speakers = applyNameSuggestions(id)
       return { ok: true, names: readJson(join(dir(id), 'names.json')), speakers }
     } catch (e) { return { ok: false, error: String(e).slice(0, 600) } }

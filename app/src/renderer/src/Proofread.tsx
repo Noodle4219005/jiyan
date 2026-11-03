@@ -30,7 +30,8 @@ function Diff({ a, b }: { a: string; b: string }): React.JSX.Element {
 }
 
 function AiPanel(p: {
-  suggestions: Suggestion[]; terms: string; busy: boolean; segs: Seg[]; seek: (t: number) => void
+  suggestions: Suggestion[]; terms: string; busy: boolean; pct?: number | null; segs: Seg[]; seek: (t: number) => void
+  onCancel: () => void
   onRun: (terms: string) => void; onResolve: (accept: { i: number; text: string }[], dismiss: number[]) => Promise<void>
 }): React.JSX.Element {
   const [terms, setTerms] = useState(p.terms)
@@ -43,7 +44,9 @@ function AiPanel(p: {
       <div className="mt-2 flex items-center gap-2">
         <input className={input} value={terms} onChange={(e) => setTerms(e.target.value)}
           placeholder="Names, products and jargon to spell correctly — e.g. QPU, Ising, Pika (optional)" />
-        <button className="btn btn-primary flex-none" disabled={p.busy} onClick={() => p.onRun(terms)}>{p.busy ? 'Working…' : list.length ? 'Run again' : 'Run'}</button>
+        {p.busy
+          ? <button className="btn flex-none" onClick={p.onCancel} title="Stop the AI proofread; nothing is changed">✕ Cancel{p.pct != null ? ` (${Math.round(p.pct * 100)}%)` : ''}</button>
+          : <button className="btn btn-primary flex-none" onClick={() => p.onRun(terms)}>{list.length ? 'Run again' : 'Run'}</button>}
       </div>
       {list.length > 0 && (
         <>
@@ -80,7 +83,7 @@ export function TranscriptPane(p: {
   onEdit: (idx: number, patch: { text?: string; spk?: string } | null) => Promise<void>
   onReplaceAll: (find: string, repl: string) => Promise<number>
   onEditMany: (idxs: number[], patch: { spk: string }) => Promise<void>
-  suggestions: Suggestion[]; terms: string; aiBusy: boolean
+  suggestions: Suggestion[]; terms: string; aiBusy: boolean; aiPct?: number | null; onAiCancel: () => void
   onAiRun: (terms: string) => void
   onResolve: (accept: { i: number; text: string }[], dismiss: number[]) => Promise<void>
 }): React.JSX.Element {
@@ -110,7 +113,7 @@ export function TranscriptPane(p: {
         <button className={`btn flex-none ${edit ? 'btn-primary' : ''}`} onClick={() => setEdit(!edit)}>{edit ? 'Done' : '✎ Proofread'}</button>
       </div>
       {(aiOpen || p.suggestions.length > 0) && (
-        <AiPanel suggestions={p.suggestions} terms={p.terms} busy={p.aiBusy} segs={p.segs} seek={p.seek} onRun={p.onAiRun} onResolve={p.onResolve} />
+        <AiPanel suggestions={p.suggestions} terms={p.terms} busy={p.aiBusy} pct={p.aiPct} onCancel={p.onAiCancel} segs={p.segs} seek={p.seek} onRun={p.onAiRun} onResolve={p.onResolve} />
       )}
       {edit && (
         <div className="mb-3 rounded-lg border border-line bg-bg p-3 text-xs text-muted">
