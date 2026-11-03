@@ -16,6 +16,8 @@ import Select from './Select'
 
 const STAGE: Record<string, string> = { new: 'Not processed', transcribed: 'Transcribed', diarized: 'Speakers found', done: 'Ready' }
 const TABS = [['summary', 'Summary'], ['transcript', 'Transcript'], ['highlights', 'Highlights & tasks'], ['subtitles', 'Subtitles']] as const
+/** True while an input method (Chinese/Japanese/Korean IME) is mid-composition: Enter/Esc then belong to the IME, not to us. */
+const composing = (e: React.KeyboardEvent): boolean => e.nativeEvent.isComposing || e.keyCode === 229
 const KIND_SEAL: Record<string, string> = { meeting: '會議', lecture: '課堂', recording: '錄音' } // seal-style stamp for the recording type
 const KINDS = [['meeting', 'Meeting'], ['lecture', 'Lecture / course'], ['recording', 'Other recording']] as const
 
@@ -288,7 +290,7 @@ export default function App(): React.JSX.Element {
                 </>
               ) : (
                 <input autoFocus value={editing} onChange={(e) => setEditing(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') void saveTitle(editing); if (e.key === 'Escape') setEditing(null) }}
+                  onKeyDown={(e) => { if (composing(e)) return; if (e.key === 'Enter') void saveTitle(editing); if (e.key === 'Escape') setEditing(null) }}
                   onBlur={() => void saveTitle(editing)}
                   className="min-w-0 flex-1 border-b-2 border-accent bg-transparent font-serif text-[30px] font-bold leading-tight outline-none" />
               )}
@@ -384,7 +386,7 @@ export default function App(): React.JSX.Element {
                         <input value={names[s] ?? ''} placeholder={s} style={{ width: `${Math.max(2, [...(names[s] || s)].length * 1.1 + 0.5)}ch` }}
                           onChange={(e) => setNames({ ...names, [s]: e.target.value })}
                           onBlur={() => void window.api.setSpeakers(cur.meta.id, Object.fromEntries(Object.entries(names).filter(([, v]) => v.trim())))}
-                          onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                          onKeyDown={(e) => !composing(e) && e.key === 'Enter' && e.currentTarget.blur()}
                           className="bg-transparent text-fg outline-none placeholder:text-muted" />
                         <span className="text-muted tabular-nums" title="Total speaking time">{mmss(sec)}</span>
                         {(cur.extra ?? []).includes(s) && (
@@ -404,6 +406,7 @@ export default function App(): React.JSX.Element {
                       <span className="flex items-center gap-1.5">
                         <input autoFocus value={adding} placeholder="Name" onChange={(e) => setAdding(e.target.value)}
                           onKeyDown={async (e) => {
+                            if (composing(e)) return
                             if (e.key === 'Escape') setAdding(null)
                             if (e.key === 'Enter' && adding.trim()) void addPerson()
                           }}
