@@ -18,6 +18,8 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.on('setup', h)
     return () => ipcRenderer.removeListener('setup', h)
   },
+  mergeSpeakers: (id: string, from: string, into: string) => ipcRenderer.invoke('speakers:merge', id, from, into),
+  unmergeSpeaker: (id: string, from: string) => ipcRenderer.invoke('speakers:unmerge', id, from),
   editSegment: (id: string, idx: number, patch: unknown) => ipcRenderer.invoke('edit:segment', id, idx, patch),
   replaceAll: (id: string, f: string, r: string) => ipcRenderer.invoke('edit:replaceAll', id, f, r),
   saveInsights: (id: string, ins: unknown) => ipcRenderer.invoke('insights:save', id, ins),

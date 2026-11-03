@@ -40,7 +40,8 @@ def _load(mid: str):
     tr = _j(d / "spk.json") or _j(d / "transcript.json")
     if tr:
         tr = edits.apply(tr, d / "spk.json")  # user's proofreading overlay
-    return _j(d / "meta.json"), tr, _j(d / "insights.json"), (_j(d / "speakers.json") or {})
+    ins = edits.apply_insights(_j(d / "insights.json"), d / "spk.json")  # same-person merges
+    return _j(d / "meta.json"), tr, ins, (_j(d / "speakers.json") or {})
 
 
 def _name(names: dict, s: str | None) -> str:

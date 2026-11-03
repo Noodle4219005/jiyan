@@ -19,7 +19,7 @@ export type SetupEvent = { steps: StepInfo[]; status: 'running' | 'done' | 'erro
 export type Thumbs = { dir: string; step: number }
 export type ChatMsg = { role: 'user' | 'assistant'; text: string; at: number; scope?: string }
 export type NameGuess = { name: string; evidence: string; t: number | null; confidence: 'high' | 'medium' | 'low' }
-export type Loaded = { namesChecked: boolean; translations: Record<string, string[]>; speakers: Record<string, string>; thumbs: Thumbs | null; meta: Meta; playback: string; transcript: Transcript | null; insights: Insights | null }
+export type Loaded = { merge: Record<string, string>; namesChecked: boolean; translations: Record<string, string[]>; speakers: Record<string, string>; thumbs: Thumbs | null; meta: Meta; playback: string; transcript: Transcript | null; insights: Insights | null }
 export type StepInfo = { name: string; state: 'pending' | 'running' | 'done'; start?: number; end?: number; pausedMs: number; pauseStart?: number }
 export type PipelineEvent = { steps?: StepInfo[]; stepPct?: number | null; id: string; step: string; status: 'running' | 'paused' | 'done' | 'error' | 'cancelled'; message?: string }
 
@@ -39,6 +39,8 @@ declare global {
       setupStatus: () => Promise<SetupStatus>
       setupRun: () => Promise<void>
       onSetup: (cb: (e: SetupEvent) => void) => () => void
+      mergeSpeakers: (id: string, from: string, into: string) => Promise<void>
+      unmergeSpeaker: (id: string, from: string) => Promise<void>
       editSegment: (id: string, idx: number, patch: { text?: string; spk?: string } | null) => Promise<void>
       replaceAll: (id: string, find: string, repl: string) => Promise<number>
       saveInsights: (id: string, ins: Insights) => Promise<void>

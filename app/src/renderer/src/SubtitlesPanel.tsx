@@ -13,7 +13,7 @@ export default function SubtitlesPanel(p: {
   translated: string[]               // slugs that have a translation
   tLang: string; setTLang: (v: string) => void
   onTranslate: () => void; onExportSrt: () => void; onExportVtt: () => void
-  staleNote?: string; lines?: React.ReactNode
+  staleNote?: string; lines?: React.ReactNode; linesHint?: string
 }): React.JSX.Element {
   return (
     <div className="grid max-w-3xl gap-6">
@@ -52,13 +52,15 @@ export default function SubtitlesPanel(p: {
           <button className="btn" onClick={p.onExportVtt}>Save .vtt</button>
         </div>
       </div>
-      {p.lines && (
-        <div>
-          <h3 className="text-sm font-semibold">Lines</h3>
-          <p className="mb-2 mt-0.5 text-xs text-muted">Click a line to jump the player there.</p>
-          {p.lines}
-        </div>
-      )}
+      <div>
+        <h3 className="text-sm font-semibold">Subtitle lines</h3>
+        {p.lines ? (
+          <>
+            <p className="mb-2 mt-0.5 text-xs text-muted">Translated lines. Click one to jump the player there.</p>
+            {p.lines}
+          </>
+        ) : <p className="mt-0.5 text-xs text-muted">{p.linesHint}</p>}
+      </div>
     </div>
   )
 }

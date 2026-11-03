@@ -41,6 +41,8 @@ export default function App(): React.JSX.Element {
   const [tLang, setTLang] = useState('English')
   const [naming, setNaming] = useState(false)
   const [nameNote, setNameNote] = useState('')
+  const [mergeFrom, setMergeFrom] = useState<string | null>(null)
+  const [mergeInto, setMergeInto] = useState('')
   const [draft, setDraft] = useState<Insights | null>(null) // non-null while editing the AI notes
   const [tick, setTick] = useState(Date.now())
   const [names, setNames] = useState<Record<string, string>>({})
@@ -52,7 +54,7 @@ export default function App(): React.JSX.Element {
   const refresh = useCallback(async () => setMeetings(await window.api.list()), [])
   const open = useCallback(async (id: string) => {
     curId.current = id
-    setVerr(''); setEditing(null); setTypeFilter(null); setNameNote(''); setDraft(null)
+    setVerr(''); setEditing(null); setTypeFilter(null); setNameNote(''); setDraft(null); setMergeFrom(null)
     const l = await window.api.load(id)
     setCur(l); setNames(l.speakers ?? {}); setNow(0); setSubSel('orig')
     if (l.transcript?.turns?.length && !l.namesChecked && !busyRef.current[id]) void autoNames(id, true)
@@ -77,6 +79,7 @@ export default function App(): React.JSX.Element {
   const transRaw = lang ? cur?.translations?.[slug(lang)] : undefined
   const transStale = !!transRaw && transRaw.length !== cues.length // transcript was edited after translating
   const trans = transStale ? undefined : transRaw
+  const linesTrans = trans ?? Object.values(cur?.translations ?? {}).find((t) => t.length === cues.length)
   const subOpts = useMemo<SubOpts>(() => ({ names, withSpk: capSpk, mode: trans ? mode : 'orig', trans }), [names, capSpk, mode, trans])
   const vttUrl = useMemo(() => (cues.length ? URL.createObjectURL(new Blob([toVtt(cues, subOpts)], { type: 'text/vtt' })) : ''), [cues, subOpts])
   useEffect(() => () => { if (vttUrl) URL.revokeObjectURL(vttUrl) }, [vttUrl])
@@ -109,7 +112,8 @@ export default function App(): React.JSX.Element {
   const reload = async (): Promise<void> => {
     if (!cur) return
     const l = await window.api.load(cur.meta.id)
-    setCur((c) => (c && c.meta.id === l.meta.id ? { ...c, transcript: l.transcript, translations: l.translations, insights: l.insights } : c))
+    setCur((c) => (c && c.meta.id === l.meta.id ? { ...c, transcript: l.transcript, translations: l.translations, insights: l.insights, merge: l.merge } : c))
+    setNames(l.speakers ?? {})
   }
   const editSegment = async (idx: number, patch: { text?: string; spk?: string } | null): Promise<void> => {
     if (!cur) return
@@ -322,9 +326,29 @@ export default function App(): React.JSX.Element {
                           onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
                           className="bg-transparent text-slate-200 outline-none placeholder:text-muted" />
                         <span className="text-muted tabular-nums" title="Total speaking time">{mmss(sec)}</span>
+                        {spkStats.length > 1 && (
+                          <button type="button" title="This is the same person as another speaker" className="text-muted hover:text-white"
+                            onClick={(e) => { e.preventDefault(); setMergeFrom(s); setMergeInto(spkStats.find(([o]) => o !== s)?.[0] ?? '') }}>⇄</button>
+                        )}
                       </label>
                     ))}
                     {nameNote && <p className="w-full text-xs text-muted">{nameNote}</p>}
+                    {mergeFrom && (
+                      <div className="flex w-full flex-wrap items-center gap-2 rounded-lg bg-bg px-3 py-2 text-xs">
+                        <span>Sometimes one person gets split into two speakers. Merge <b>{names[mergeFrom] || mergeFrom}</b> into</span>
+                        <select value={mergeInto} onChange={(e) => setMergeInto(e.target.value)} className="rounded-md border border-line bg-panel px-2 py-1 text-xs outline-none">
+                          {spkStats.filter(([o]) => o !== mergeFrom).map(([o]) => <option key={o} value={o}>{names[o] || o}</option>)}
+                        </select>
+                        <button className="btn btn-primary px-2 py-1 text-xs" onClick={async () => { await window.api.mergeSpeakers(cur.meta.id, mergeFrom, mergeInto); setMergeFrom(null); await reload() }}>Merge</button>
+                        <button className="btn px-2 py-1 text-xs" onClick={() => setMergeFrom(null)}>Cancel</button>
+                      </div>
+                    )}
+                    {Object.entries(cur.merge ?? {}).map(([from, into]) => (
+                      <p key={from} className="w-full text-xs text-muted">
+                        {from} is treated as the same person as {names[into] || into}.{' '}
+                        <button className="text-accent hover:underline" onClick={async () => { await window.api.unmergeSpeaker(cur.meta.id, from); await reload() }}>Split back</button>
+                      </p>
+                    ))}
                   </div>
                 )}
               </Card>
@@ -415,7 +439,8 @@ export default function App(): React.JSX.Element {
                     onExportSrt={() => void window.api.exportText(toSrt(cues, subOpts), cur.meta.title, 'srt')}
                     onExportVtt={() => void window.api.exportText(toVtt(cues, subOpts), cur.meta.title, 'vtt')}
                     staleNote={transStale ? 'The transcript was edited after this translation, so the translation is hidden. Translate again to refresh it.' : ''}
-                    lines={<CueList cues={cues} opts={subOpts} active={ci} seek={seek} />} />
+                    lines={linesTrans ? <CueList cues={cues} opts={{ names, withSpk: capSpk, mode: 'trans', trans: linesTrans }} active={ci} seek={seek} /> : undefined}
+                    linesHint="Translate the subtitles to see them here, line by line. The original wording is in the Transcript tab." />
                 ) : <p className="text-sm text-muted">Subtitles appear once the recording is transcribed.</p>)}
               </div>
             </div>

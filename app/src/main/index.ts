@@ -39,7 +39,11 @@ const dir = (id: string) => join(DATA, id)
 function applyNameSuggestions(id: string): Record<string, string> {
   const sug = (readJson(join(dir(id), 'names.json')) ?? {}) as Record<string, { name?: string; confidence?: string }>
   const cur = (readJson(join(dir(id), 'speakers.json')) ?? {}) as Record<string, string>
-  for (const [s, g] of Object.entries(sug)) if (g.name?.trim() && g.confidence !== 'low' && !cur[s]?.trim()) cur[s] = g.name.trim()
+  const merge = readEF(id).merge
+  for (const [s0, g] of Object.entries(sug)) {
+    const s = canon(s0, merge) ?? s0
+    if (g.name?.trim() && g.confidence !== 'low' && !cur[s]?.trim()) cur[s] = g.name.trim()
+  }
   writeFileSync(join(dir(id), 'speakers.json'), JSON.stringify(cur, null, 1))
   return cur
 }
@@ -279,11 +283,27 @@ async function setupRun(win: BrowserWindow): Promise<void> {
 type SegPatch = { text?: string; spk?: string }
 type Seg = { start: number; end: number; text: string; spk?: string; words?: unknown[]; edited?: boolean; orig?: string; origSpk?: string }
 const editsFile = (id: string): string => join(dir(id), 'edits.json')
-const readEdits = (id: string): Record<string, SegPatch> => (readJson(editsFile(id))?.seg ?? {}) as Record<string, SegPatch>
-const writeEdits = (id: string, seg: Record<string, SegPatch>): void => writeFileSync(editsFile(id), JSON.stringify({ seg }, null, 1))
-function withEdits<T extends { segments: Seg[] }>(id: string, tr: T | null): T | null {
+type EditsFile = { seg: Record<string, SegPatch>; merge: Record<string, string> } // merge: {S3: 'S0'} = same person
+const readEF = (id: string): EditsFile => { const j = readJson(editsFile(id)) ?? {}; return { seg: j.seg ?? {}, merge: j.merge ?? {} } }
+const writeEF = (id: string, ef: EditsFile): void => writeFileSync(editsFile(id), JSON.stringify(ef, null, 1))
+const readEdits = (id: string): Record<string, SegPatch> => readEF(id).seg
+const writeEdits = (id: string, seg: Record<string, SegPatch>): void => writeEF(id, { ...readEF(id), seg })
+const canon = (l: string | undefined, merge: Record<string, string>): string | undefined => {
+  const seen = new Set<string>()
+  while (l && merge[l] && !seen.has(l)) { seen.add(l); l = merge[l] }
+  return l
+}
+function mapInsights<T extends { highlights?: { speaker?: string }[]; action_items?: { speaker?: string }[] } | null>(id: string, ins: T): T {
+  if (!ins) return ins
+  const merge = readEF(id).merge
+  for (const x of [...(ins.highlights ?? []), ...(ins.action_items ?? [])]) if (x.speaker) x.speaker = canon(x.speaker, merge)
+  return ins
+}
+function withEdits<T extends { segments: Seg[]; turns?: { spk: string }[] }>(id: string, tr: T | null): T | null {
   if (!tr) return tr
-  const ed = readEdits(id)
+  const { seg: ed, merge } = readEF(id)
+  tr.segments.forEach((s) => { s.spk = canon(s.spk, merge) })
+  tr.turns?.forEach((u) => { u.spk = canon(u.spk, merge) ?? u.spk })
   tr.segments.forEach((s, i) => {
     const p = ed[String(i)]
     if (!p) return
@@ -306,7 +326,7 @@ function writeReadable(id: string): void {
   const nm = (s?: string): string => (s && names[s]) || s || '?'
   writeFileSync(join(d, 'transcript.txt'), `# ${meta.title}\n# one line per utterance: [mm:ss] speaker: text\n` +
     (tr.segments as { start: number; text: string; spk?: string }[]).map((s) => `[${mm(s.start)}] ${nm(s.spk)}: ${s.text}`).join('\n') + '\n')
-  const ins = readJson(join(d, 'insights.json'))
+  const ins = mapInsights(id, readJson(join(d, 'insights.json')))
   if (ins) {
     const L = (a: { t: number; speaker?: string }[] | undefined, f: (x: never) => string): string => (a ?? []).map((x) => `- [${mm(x.t)}] ${f(x as never)}`).join('\n')
     writeFileSync(join(d, 'summary.md'), `# ${meta.title}\n\n## Summary\n${ins.summary ?? ''}\n\n## Topics\n${L(ins.topics, (x: { title: string }) => x.title)}\n\n` +
@@ -368,7 +388,8 @@ function createWindow(): void {
     speakers: readJson(join(dir(id), 'speakers.json')) ?? {},
     thumbs: existsSync(join(thumbsDir(id), '00001.jpg')) ? { dir: thumbsDir(id), step: THUMB_STEP } : null,
     transcript: withEdits(id, readJson(join(dir(id), 'spk.json')) ?? readJson(join(dir(id), 'transcript.json'))),
-    insights: readJson(join(dir(id), 'insights.json'))
+    insights: mapInsights(id, readJson(join(dir(id), 'insights.json'))),
+    merge: readEF(id).merge
   }))
   ipcMain.removeHandler('meeting:import')
   ipcMain.handle('meeting:import', async (_e, kind: string) => {
@@ -425,6 +446,27 @@ function createWindow(): void {
   ipcMain.handle('setup:status', () => setupStatus())
   ipcMain.removeHandler('setup:run')
   ipcMain.handle('setup:run', () => void setupRun(win))
+  ipcMain.removeHandler('speakers:merge')
+  ipcMain.handle('speakers:merge', (_e, id: string, from: string, into: string) => {
+    if (from === into) return
+    const ef = readEF(id)
+    const target = canon(into, ef.merge) ?? into
+    if (target === from) return // would make a cycle
+    ef.merge[from] = target
+    for (const k of Object.keys(ef.merge)) if (ef.merge[k] === from) ef.merge[k] = target // things merged into `from` follow it
+    writeEF(id, ef)
+    const nf = join(dir(id), 'speakers.json')
+    const names = (readJson(nf) ?? {}) as Record<string, string>
+    if (names[from]?.trim() && !names[target]?.trim()) names[target] = names[from]
+    delete names[from]
+    writeFileSync(nf, JSON.stringify(names, null, 1))
+  })
+  ipcMain.removeHandler('speakers:unmerge')
+  ipcMain.handle('speakers:unmerge', (_e, id: string, from: string) => {
+    const ef = readEF(id)
+    delete ef.merge[from]
+    writeEF(id, ef)
+  })
   ipcMain.removeHandler('edit:segment')
   ipcMain.handle('edit:segment', (_e, id: string, idx: number, patch: SegPatch | null) => {
     const ed = readEdits(id)
