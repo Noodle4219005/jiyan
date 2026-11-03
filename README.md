@@ -51,5 +51,5 @@ npm run dev                                # development window with hot reload
 
 ## License
 
-[0BSD](LICENSE) — use, copy, modify and distribute for any purpose, no attribution required.
+[MIT](LICENSE) — free to use, copy, modify and distribute; keep the copyright notice.
 Jiyan downloads speech and speaker models on first run; each of those, and each dependency, keeps its own licence.
