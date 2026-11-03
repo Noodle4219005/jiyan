@@ -42,7 +42,7 @@ export default function SubtitlesPanel(p: {
         </div>
       </div>
 
-      {p.staleNote && <p className="rounded-lg bg-amber-900/30 px-3 py-2 text-xs text-amber-200">{p.staleNote}</p>}
+      {p.staleNote && <p className="rounded-lg bg-warn px-3 py-2 text-xs text-warn-fg">{p.staleNote}</p>}
 
       <div>
         <h3 className="text-sm font-semibold">Export</h3>

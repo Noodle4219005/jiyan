@@ -1,4 +1,5 @@
 import type React from 'react'
+import { Check, Pause } from 'lucide-react'
 import { mmss, spkColor } from './Timeline'
 import type { StepInfo } from './types'
 
@@ -14,7 +15,7 @@ export const Card = ({ title, hint, right, children, className = '' }: {
     {(title || right) && (
       <header className="mb-3 flex items-start gap-3">
         <div className="min-w-0 flex-1">
-          {title && <h2 className="text-sm font-semibold text-slate-100">{title}</h2>}
+          {title && <h2 className="text-sm font-semibold text-fg">{title}</h2>}
           {hint && <p className="mt-0.5 text-xs text-muted">{hint}</p>}
         </div>
         {right}
@@ -38,7 +39,7 @@ export const Spk = ({ s, names }: { s?: string; names: Record<string, string> })
   <span className="mx-1.5 rounded-full px-2 py-px text-[11px] font-medium text-black" style={{ background: spkColor(s) }}>{(s && names[s]) || s || '?'}</span>
 )
 export const SpkLine = ({ s, names }: { s?: string; names: Record<string, string> }): React.JSX.Element => (
-  <div className="flex items-center gap-1.5 text-xs font-medium text-slate-300">
+  <div className="flex items-center gap-1.5 text-xs font-medium text-fg2">
     <i className="size-2 rounded-full" style={{ background: spkColor(s) }} />{(s && names[s]) || s || '?'}
   </div>
 )
@@ -57,7 +58,7 @@ export const Steps = ({ steps, now, pct }: { steps: StepInfo[]; now: number; pct
       return (
         <div key={s.name} className={s.state === 'pending' ? 'opacity-50' : ''}>
           <div className="mb-1 flex items-center justify-between text-xs">
-            <span>{s.state === 'done' ? '✓ ' : paused ? '⏸ ' : ''}{s.name}</span>
+            <span className="flex items-center gap-1">{s.state === 'done' && <Check className="size-3 text-okc" />}{paused && <Pause className="size-3 text-warnc" />}{s.name}</span>
             <span className="font-mono tabular-nums text-muted">
               {s.state === 'running' && pct != null && `${Math.round(pct * 100)}% · `}{s.state === 'pending' ? '' : dur(el)}
             </span>

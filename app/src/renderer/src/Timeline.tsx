@@ -57,7 +57,7 @@ export default function Timeline(p: {
         <div className="pointer-events-none absolute bottom-[calc(100%+8px)] z-10 w-48 rounded-lg border border-line bg-panel2 p-1.5 text-xs shadow-xl" style={{ left: Math.max(0, Math.min(hover.px - 96, hover.w - 192)) }}>
           {p.thumbs && <img className="block w-full rounded" src={thumbUrl(p.thumbs, hover.t)} />}
           <div className="mt-1 flex items-center gap-1.5"><b className="tabular-nums">{mmss(hover.t)}</b>{near && <span className="rounded-full px-2 py-px text-[10px] font-medium text-black" style={{ background: TYPE_COLOR[near.type] }}>{TYPE_LABEL[near.type] ?? near.type}</span>}</div>
-          {near && <div className="mt-0.5 text-slate-300">{near.title}</div>}
+          {near && <div className="mt-0.5 text-fg2">{near.title}</div>}
         </div>
       )}
     </div>

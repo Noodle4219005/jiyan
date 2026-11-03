@@ -1,4 +1,5 @@
 import type React from 'react'
+import { X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { UsageAgg, UsageRow, UsageSummary } from './types'
 
@@ -37,11 +38,11 @@ export default function UsageDialog(p: { onClose: () => void }): React.JSX.Eleme
   const [u, setU] = useState<UsageSummary | null>(null)
   useEffect(() => { void window.api.usageSummary().then(setU) }, [])
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 backdrop-blur-sm" onClick={p.onClose}>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-overlay backdrop-blur-[2px]" onClick={p.onClose}>
       <div className="max-h-[90vh] w-[680px] overflow-auto rounded-xl border border-line bg-panel p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center">
           <h2 className="flex-1 text-base font-semibold">AI token usage</h2>
-          <button className="btn px-2 py-1 text-xs" onClick={p.onClose}>✕</button>
+          <button className="btn px-2 py-1 text-xs" onClick={p.onClose}><X className="size-3.5" /></button>
         </div>
         {!u ? <p className="mt-3 text-sm text-muted">Loading…</p> : (
           <>

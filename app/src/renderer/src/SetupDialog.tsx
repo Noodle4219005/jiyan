@@ -1,16 +1,17 @@
 import type React from 'react'
+import { Check } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { Steps } from './Parts'
 import type { SetupEvent, SetupStatus } from './types'
 
 const Row = ({ ok, title, children }: { ok: boolean; title: string; children?: React.ReactNode }): React.JSX.Element => (
   <div className="flex gap-3 py-2">
-    <span className={`mt-0.5 grid size-5 flex-none place-items-center rounded-full text-xs ${ok ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>{ok ? '✓' : '!'}</span>
+    <span className={`mt-0.5 grid size-5 flex-none place-items-center rounded-full text-xs ${ok ? 'bg-ok text-okc' : 'bg-warn text-warnc'}`}>{ok ? <Check className="size-3" /> : <span className="font-bold">!</span>}</span>
     <div className="min-w-0 flex-1 text-sm"><div className="font-medium">{title}</div>{children && <div className="mt-0.5 text-xs text-muted">{children}</div>}</div>
   </div>
 )
 const Cmd = ({ c }: { c: string }): React.JSX.Element => (
-  <code className="mt-1 flex items-center gap-2 rounded-md border border-line bg-bg px-2 py-1 text-[11px] text-slate-300">
+  <code className="mt-1 flex items-center gap-2 rounded-md border border-line bg-bg px-2 py-1 text-[11px] text-fg2">
     <span className="min-w-0 flex-1 select-all break-all">{c}</span>
     <button className="flex-none text-accent hover:underline" onClick={() => void navigator.clipboard.writeText(c)}>Copy</button>
   </code>
@@ -31,7 +32,7 @@ export default function SetupDialog(p: { onClose: () => void }): React.JSX.Eleme
   const running = run?.status === 'running'
   const anyHarness = st.harness.claude || st.harness.codex || st.harness.pi
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-overlay backdrop-blur-[2px]">
       <div className="max-h-[90vh] w-[560px] overflow-auto rounded-xl border border-line bg-panel p-5 shadow-2xl">
         <h2 className="text-base font-semibold">Set up Jiyan</h2>
         <p className="mt-1 text-xs text-muted">One-time setup. Everything runs on this computer; only the AI summary uses the assistant you choose.</p>
@@ -54,7 +55,7 @@ export default function SetupDialog(p: { onClose: () => void }): React.JSX.Eleme
         </div>
 
         {run && <div className="mt-3"><Steps steps={run.steps} now={tick} pct={null} /></div>}
-        {run?.status === 'error' && <div className="mt-3 whitespace-pre-wrap rounded-lg bg-red-900/40 px-3 py-2 text-xs text-red-200">{run.message}</div>}
+        {run?.status === 'error' && <div className="mt-3 whitespace-pre-wrap rounded-lg bg-err px-3 py-2 text-xs text-err-fg">{run.message}</div>}
 
         <div className="mt-4 flex items-center justify-end gap-2">
           <button className="btn" onClick={() => void check()} disabled={running}>Re-check</button>

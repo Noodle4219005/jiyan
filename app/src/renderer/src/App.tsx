@@ -1,4 +1,5 @@
 import type React from 'react'
+import { ArrowLeftRight, AudioLines, ChevronLeft, ChevronRight, Pencil, Plus, RotateCw, Settings, Sparkles, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Chat from './Chat'
 import CueList from './CueList'
@@ -138,7 +139,7 @@ export default function App(): React.JSX.Element {
     const name = adding.trim()
     await window.api.addSpeaker(cur.meta.id, name)
     setAdding(null); await reload(); setTab('transcript')
-    setNameNote(`Added ${name}. Open Transcript → ✎ Proofread, tick the lines ${name} said (shift-click for a range) and press Assign.`)
+    setNameNote(`Added ${name}. Open Transcript → Proofread, tick the lines ${name} said (shift-click for a range) and press Assign.`)
   }
   const saveDraft = async (): Promise<void> => { if (cur && draft) { await window.api.saveInsights(cur.meta.id, draft); setDraft(null); await reload() } }
   const seek = (t: number): void => { if (video.current) { video.current.currentTime = t; void video.current.play() } }
@@ -179,45 +180,46 @@ export default function App(): React.JSX.Element {
   return (
     <div className="grid h-full grid-cols-[264px_1fr]">
       {/* ───────── sidebar ───────── */}
-      <aside className="flex min-h-0 flex-col border-r border-line bg-panel">
-        <div className="space-y-2 border-b border-line p-3">
-          <div className="text-sm font-semibold">Jiyan <span className="font-normal text-muted">記言</span></div>
+      <aside className="flex min-h-0 flex-col border-r border-line bg-side">
+        <div className="space-y-2.5 p-3">
+          <div className="flex items-center gap-2 px-1 pb-1 text-sm font-semibold"><AudioLines className="size-4 text-accent" />Jiyan <span className="font-normal text-muted">記言</span></div>
           <label className="block text-[11px] text-muted">What are you importing?
             <select value={kind} onChange={(e) => setKind(e.target.value)}
-              className="mt-1 w-full rounded-md border border-line bg-bg px-2.5 py-1.5 text-sm text-slate-200 outline-none focus:border-accent">
+              className="field mt-1 w-full bg-panel">
               {KINDS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
             </select>
           </label>
           <button className="btn btn-primary w-full" onClick={async () => { const id = await window.api.importVideo(kind); await refresh(); if (id) await open(id) }}>
-            ＋ Import video or audio
+            <Plus className="size-4" />Import video or audio
           </button>
         </div>
-        <div className="min-h-0 flex-1 space-y-1 overflow-auto p-2">
+        <div className="min-h-0 flex-1 space-y-px overflow-auto px-2 pb-2">
+          <div className="px-2 pb-1 pt-2 text-[11px] font-medium text-muted">Recordings</div>
           {meetings.length === 0 && <p className="px-2 py-3 text-xs text-muted">No recordings yet.</p>}
           {meetings.map((m) => (
             <div key={m.id} onClick={() => void open(m.id)}
-              className={`group cursor-pointer rounded-lg border px-3 py-2 transition ${cur?.meta.id === m.id ? 'border-accent/60 bg-panel2' : 'border-transparent hover:bg-panel2'}`}>
+              className={`group cursor-pointer rounded-md px-2.5 py-1.5 transition ${cur?.meta.id === m.id ? 'bg-panel2' : 'hover:bg-panel2/60'}`}>
               <div className="flex items-center gap-1">
-                <div className="min-w-0 flex-1 truncate text-sm">{m.title}</div>
-                <button title="Delete this recording from the app" className="rounded px-1.5 text-muted opacity-0 transition hover:bg-red-900/50 hover:text-red-200 group-hover:opacity-100"
-                  onClick={async (e) => { e.stopPropagation(); if (await window.api.deleteMeeting(m.id)) { if (curId.current === m.id) { setCur(null); curId.current = null } void refresh() } }}>✕</button>
+                <div className={`min-w-0 flex-1 truncate text-[13.5px] ${cur?.meta.id === m.id ? 'font-medium text-fg' : 'text-fg2'}`}>{m.title}</div>
+                <button title="Delete this recording from the app" className="rounded px-1.5 text-muted opacity-0 transition hover:bg-err hover:text-err-fg group-hover:opacity-100"
+                  onClick={async (e) => { e.stopPropagation(); if (await window.api.deleteMeeting(m.id)) { if (curId.current === m.id) { setCur(null); curId.current = null } void refresh() } }}><X className="size-3.5" /></button>
               </div>
-              <div className="mt-1 flex items-center gap-2 text-xs">
-                <Badge>{kindOf(m)}</Badge>
-                <span className={busyOf(m.id) ? 'text-amber-400' : m.stage === 'done' ? 'text-emerald-400' : 'text-muted'}>
+              <div className="mt-0.5 flex items-center gap-1.5 text-[11.5px] text-muted">
+                <span>{kindOf(m)}</span><span>·</span>
+                <span className={busyOf(m.id) ? 'text-warnc' : m.stage === 'done' ? 'text-okc' : 'text-muted'}>
                   {busyOf(m.id) ? `${progress[m.id].status === 'paused' ? 'Paused · ' : ''}${progress[m.id].step}` : STAGE[m.stage ?? 'new']}
                 </span>
               </div>
             </div>
           ))}
         </div>
-        <div className="border-t border-line p-2">
-          <button className="mb-2 flex w-full items-center justify-between rounded-md border border-line px-3 py-1.5 text-left text-xs text-muted transition hover:bg-panel2 hover:text-slate-200"
+        <div className="space-y-0.5 border-t border-line p-2">
+          <button className="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-left text-xs text-muted transition hover:bg-panel2 hover:text-fg"
             title="AI token usage — click for details" onClick={() => setShowUsage(true)}>
             <span>AI tokens today</span>
-            <span className="tabular-nums text-slate-200">{usage ? `${usage.today.estimated ? '~' : ''}${fmtTok(usage.today.input + usage.today.output)}${usage.today.cost > 0 ? ` · ${fmtCost(usage.today.cost)}` : ''}` : '…'}</span>
+            <span className="tabular-nums text-fg">{usage ? `${usage.today.estimated ? '~' : ''}${fmtTok(usage.today.input + usage.today.output)}${usage.today.cost > 0 ? ` · ${fmtCost(usage.today.cost)}` : ''}` : '…'}</span>
           </button>
-          <button className="btn w-full" onClick={() => setShowSettings(true)}>⚙ Settings</button>
+          <button className="btn w-full justify-start px-2.5" onClick={() => setShowSettings(true)}><Settings className="size-4" />Settings</button>
         </div>
       </aside>
 
@@ -226,14 +228,14 @@ export default function App(): React.JSX.Element {
         {!cur && (
           <div className="mx-auto mt-24 max-w-md text-center">
             <h1 className="text-xl font-semibold">Turn recordings into notes</h1>
-            <ol className="mt-6 space-y-3 text-left text-sm text-slate-300">
+            <ol className="mt-6 space-y-3 text-left text-sm text-fg2">
               {[
                 <>Pick the type, then click <i>Import video or audio</i>.</>,
                 <>The app transcribes, finds who spoke and writes an AI summary.</>,
                 <>Browse the timeline, highlights and subtitles; export, or ask Claude Code / Codex through MCP.</>
               ].map((t, k) => (
                 <li key={k} className="flex items-start gap-3">
-                  <span className="mt-px grid size-5 flex-none place-items-center rounded-full bg-accent/20 text-xs font-semibold text-blue-300">{k + 1}</span>
+                  <span className="mt-px grid size-5 flex-none place-items-center rounded-full bg-accent/15 text-xs font-semibold text-accent">{k + 1}</span>
                   <span className="min-w-0 flex-1 leading-relaxed">{t}</span>
                 </li>
               ))}
@@ -241,23 +243,23 @@ export default function App(): React.JSX.Element {
           </div>
         )}
         {cur && (
-          <div className="mx-auto flex max-w-[1400px] flex-col gap-4 p-5">
+          <div className="mx-auto flex max-w-[1400px] flex-col gap-5 px-8 py-7">
             {/* header */}
-            <div className="flex items-center gap-2">
+            <div className="group flex items-center gap-3">
               {editing === null ? (
                 <>
-                  <h1 className="min-w-0 truncate text-xl font-semibold" title={cur.meta.title}>{cur.meta.title}</h1>
-                  <Badge>{kindOf(cur.meta)}</Badge>
-                  <button className="btn px-2 py-0.5 text-xs" onClick={() => setEditing(cur.meta.title)}>Rename</button>
+                  <h1 className="min-w-0 cursor-text truncate text-[28px] font-bold leading-tight tracking-tight" title="Click to rename" onClick={() => setEditing(cur.meta.title)}>{cur.meta.title}</h1>
+                  <Pencil className="size-4 flex-none text-muted opacity-0 transition group-hover:opacity-100" />
+                  <span className="flex-none text-xs text-muted">{kindOf(cur.meta)}</span>
                   {ins?.title && ins.title !== cur.meta.title && (
-                    <button className="btn px-2 py-0.5 text-xs" title={ins.title} onClick={() => void saveTitle(ins.title!)}>Use AI title</button>
+                    <button className="btn flex-none text-xs opacity-0 transition group-hover:opacity-100" title={ins.title} onClick={() => void saveTitle(ins.title!)}><Sparkles className="size-3.5" />Use AI title</button>
                   )}
                 </>
               ) : (
                 <input autoFocus value={editing} onChange={(e) => setEditing(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') void saveTitle(editing); if (e.key === 'Escape') setEditing(null) }}
                   onBlur={() => void saveTitle(editing)}
-                  className="min-w-0 flex-1 rounded-md border border-accent bg-panel px-3 py-1 text-xl font-semibold outline-none" />
+                  className="min-w-0 flex-1 border-b-2 border-accent bg-transparent text-[28px] font-bold leading-tight tracking-tight outline-none" />
               )}
             </div>
 
@@ -277,7 +279,7 @@ export default function App(): React.JSX.Element {
                       const gone = pos === 1 && now > c.end + 3 // silence: dim the last line
                       return (
                         <p key={`s${pos}`} onClick={() => seek(c.start)}
-                          className={`cursor-pointer whitespace-pre-line px-4 transition ${pos === 1 ? `text-2xl font-medium leading-snug ${gone ? 'text-slate-500' : 'text-white'}` : 'text-sm text-muted hover:text-slate-300'}`}>
+                          className={`cursor-pointer whitespace-pre-line px-4 transition ${pos === 1 ? `text-2xl font-medium leading-snug ${gone ? 'text-muted' : 'text-fg'}` : 'text-sm text-muted hover:text-fg2'}`}>
                           {cueLabel(c, i, subOpts)}
                         </p>
                       )
@@ -289,15 +291,15 @@ export default function App(): React.JSX.Element {
               <video ref={video as React.RefObject<HTMLVideoElement>} controls src={mediaUrl(cur.playback)}
                 onError={(e) => setVerr(`${e.currentTarget.error?.code}: ${e.currentTarget.error?.message}`)}
                 onTimeUpdate={(e) => setNow(e.currentTarget.currentTime)}
-                className="max-h-[46vh] w-full rounded-xl bg-black">
+                className="max-h-[46vh] w-full rounded-lg bg-black">
                 {vttUrl && <track key={vttUrl} kind="subtitles" src={vttUrl} default />}
               </video>
             )}
-            {verr && <div className="rounded-lg bg-red-900/40 px-3 py-2 text-sm text-red-200">Video failed to load: {verr}</div>}
+            {verr && <div className="rounded-lg bg-err px-3 py-2 text-sm text-err-fg">Video failed to load: {verr}</div>}
             {cues.length > 0 && (
               <div className="-mt-2 flex items-center gap-2 text-xs text-muted">
-                <button className="btn px-2.5 py-1 text-xs" title="Previous subtitle line (press [)" onClick={() => stepCue(-1)}>◀ Previous line</button>
-                <button className="btn px-2.5 py-1 text-xs" title="Next subtitle line (press ])" onClick={() => stepCue(1)}>Next line ▶</button>
+                <button className="btn px-2.5 py-1 text-xs" title="Previous subtitle line (press [)" onClick={() => stepCue(-1)}><ChevronLeft className="size-3.5" />Previous line</button>
+                <button className="btn px-2.5 py-1 text-xs" title="Next subtitle line (press ])" onClick={() => stepCue(1)}>Next line<ChevronRight className="size-3.5" /></button>
                 <span>Keys: <kbd className="rounded border border-line px-1">[</kbd> <kbd className="rounded border border-line px-1">]</kbd></span>
               </div>
             )}
@@ -317,8 +319,8 @@ export default function App(): React.JSX.Element {
             {prog?.status === 'done' && prog.steps && (
               <div className="text-xs text-muted">Last run: {prog.steps.map((s) => `${s.name} ${dur((s.end ?? 0) - (s.start ?? 0) - s.pausedMs)}`).join(' · ')}</div>
             )}
-            {prog?.status === 'cancelled' && <div className="rounded-lg bg-slate-700/40 px-3 py-2 text-sm text-slate-300">Cancelled. Finished steps are kept — use “Continue processing” to pick up where it stopped.</div>}
-            {prog?.status === 'error' && <div className="whitespace-pre-wrap rounded-lg bg-red-900/40 px-3 py-2 text-sm text-red-200">{prog.message}</div>}
+            {prog?.status === 'cancelled' && <div className="rounded-lg bg-panel2 px-3 py-2 text-sm text-fg2">Cancelled. Finished steps are kept — use “Continue processing” to pick up where it stopped.</div>}
+            {prog?.status === 'error' && <div className="whitespace-pre-wrap rounded-lg bg-err px-3 py-2 text-sm text-err-fg">{prog.message}</div>}
             {stage !== 'done' && !busyOf(cur.meta.id) && (
               <button className="btn btn-primary self-start" onClick={() => void window.api.run(cur.meta.id)}>Continue processing</button>
             )}
@@ -343,7 +345,7 @@ export default function App(): React.JSX.Element {
                     <span className="text-xs text-muted">Speakers — names are detected automatically; type to change:</span>
                     <button className="btn px-2 py-0.5 text-xs" disabled={naming || stage === 'new' || stage === 'transcribed'} onClick={() => void autoNames(cur.meta.id, false)}
                       title="Names are filled in automatically. This re-runs the detection; it only fills empty boxes and never overwrites a name you typed.">
-                      {naming ? 'Looking for names…' : '✨ Re-detect names'}
+                      {naming ? 'Looking for names…' : <><Sparkles className="size-3.5" />Re-detect names</>}
                     </button>
                     {spkStats.map(([s, sec]) => (
                       <label key={s} className="flex items-center gap-1.5 rounded-full border border-line bg-bg py-1 pl-2.5 pr-2 text-xs">
@@ -352,21 +354,21 @@ export default function App(): React.JSX.Element {
                           onChange={(e) => setNames({ ...names, [s]: e.target.value })}
                           onBlur={() => void window.api.setSpeakers(cur.meta.id, Object.fromEntries(Object.entries(names).filter(([, v]) => v.trim())))}
                           onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-                          className="bg-transparent text-slate-200 outline-none placeholder:text-muted" />
+                          className="bg-transparent text-fg outline-none placeholder:text-muted" />
                         <span className="text-muted tabular-nums" title="Total speaking time">{mmss(sec)}</span>
                         {(cur.extra ?? []).includes(s) && (
-                          <button type="button" title="Remove this person (their lines go back to the original speaker)" className="text-muted hover:text-red-300"
-                            onClick={async (e) => { e.preventDefault(); await window.api.removeSpeaker(cur.meta.id, s); await reload() }}>✕</button>
+                          <button type="button" title="Remove this person (their lines go back to the original speaker)" className="text-muted hover:text-err-fg"
+                            onClick={async (e) => { e.preventDefault(); await window.api.removeSpeaker(cur.meta.id, s); await reload() }}><X className="size-3" /></button>
                         )}
                         {spkStats.length > 1 && (
-                          <button type="button" title="This is the same person as another speaker" className="text-muted hover:text-white"
-                            onClick={(e) => { e.preventDefault(); setMergeFrom(s); setMergeInto(spkStats.find(([o]) => o !== s)?.[0] ?? '') }}>⇄</button>
+                          <button type="button" title="This is the same person as another speaker" className="text-muted hover:text-fg"
+                            onClick={(e) => { e.preventDefault(); setMergeFrom(s); setMergeInto(spkStats.find(([o]) => o !== s)?.[0] ?? '') }}><ArrowLeftRight className="size-3.5" /></button>
                         )}
                       </label>
                     ))}
                     {adding === null ? (
                       <button className="btn px-2 py-0.5 text-xs" title="Someone the automatic detection missed — then assign their lines in Transcript → Proofread"
-                        onClick={() => setAdding('')}>＋ Add person</button>
+                        onClick={() => setAdding('')}><Plus className="size-3.5" />Add person</button>
                     ) : (
                       <span className="flex items-center gap-1.5">
                         <input autoFocus value={adding} placeholder="Name" onChange={(e) => setAdding(e.target.value)}
@@ -408,7 +410,7 @@ export default function App(): React.JSX.Element {
               <div className="flex flex-none gap-1 border-b border-line">
                 {TABS.map(([k, label]) => (
                   <button key={k} onClick={() => setTab(k)}
-                    className={`-mb-px border-b-2 px-4 py-2 text-sm transition ${tab === k ? 'border-accent text-white' : 'border-transparent text-muted hover:text-slate-200'}`}>
+                    className={`-mb-px border-b-2 px-3 py-1.5 text-[13.5px] transition ${tab === k ? 'border-fg font-medium text-fg' : 'border-transparent text-muted hover:text-fg'}`}>
                     {label}
                   </button>
                 ))}
@@ -424,8 +426,8 @@ export default function App(): React.JSX.Element {
                       </>
                     ) : (
                       <>
-                        <button className="btn" onClick={() => setDraft(structuredClone(ins))}>✎ Edit notes</button>
-                        <button className="btn" title="Re-write the notes from the corrected transcript" onClick={() => void window.api.regenInsights(cur.meta.id)}>↻ Regenerate from transcript</button>
+                        <button className="btn" onClick={() => setDraft(structuredClone(ins))}><Pencil className="size-3.5" />Edit notes</button>
+                        <button className="btn" title="Re-write the notes from the corrected transcript" onClick={() => void window.api.regenInsights(cur.meta.id)}><RotateCw className="size-3.5" />Regenerate from transcript</button>
                       </>
                     )}
                   </div>
@@ -436,7 +438,7 @@ export default function App(): React.JSX.Element {
                 {tab === 'summary' && !draft && (ins ? (
                   <div className="max-w-3xl">
                     <h2 className="text-lg font-semibold">{ins.title ?? cur.meta.title}</h2>
-                    <p className="mt-2 leading-relaxed text-slate-300">{ins.summary}</p>
+                    <p className="mt-2 leading-relaxed text-fg2">{ins.summary}</p>
                     <H3>{cur.meta.kind === 'lecture' || ins.kind === 'lecture' ? 'Chapters' : 'Topics'} — click to jump</H3>
                     {ins.topics?.map((t, i) => <div key={i} className={rowCls} onClick={() => seek(t.t)}><Time t={t.t} />{t.title}</div>)}
                     {!!ins.concepts?.length && (<>
@@ -459,10 +461,10 @@ export default function App(): React.JSX.Element {
                   <>
                     <div className="mb-3 flex flex-wrap items-center gap-1.5">
                       <span className="mr-1 text-xs text-muted">Category</span>
-                      <button onClick={() => setTypeFilter(null)} className={`rounded-full border px-2.5 py-0.5 text-xs ${typeFilter === null ? 'border-accent text-white' : 'border-line text-muted hover:text-slate-200'}`}>All</button>
+                      <button onClick={() => setTypeFilter(null)} className={`rounded-full border px-2.5 py-0.5 text-xs ${typeFilter === null ? 'border-accent text-fg' : 'border-line text-muted hover:text-fg'}`}>All</button>
                       {usedTypes.map((k) => (
                         <button key={k} onClick={() => setTypeFilter(typeFilter === k ? null : k)}
-                          className={`flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs ${typeFilter === k ? 'border-accent text-white' : 'border-line text-muted hover:text-slate-200'}`}>
+                          className={`flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs ${typeFilter === k ? 'border-accent text-fg' : 'border-line text-muted hover:text-fg'}`}>
                           <i className="size-2 rounded-full" style={{ background: TYPE_COLOR[k] }} />{TYPE_LABEL[k] ?? k}
                         </button>
                       ))}

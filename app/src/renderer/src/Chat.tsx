@@ -1,4 +1,5 @@
 import type React from 'react'
+import { MessageCircle, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { ChatMsg } from './types'
 
@@ -15,7 +16,7 @@ function Rich({ text, onSeek }: { text: string; onSeek?: (t: number) => void }):
         if (!IS_TS.test(part) || !onSeek) return <span key={i}>{part}</span>
         const n = part.slice(1, -1).split(':').map(Number)
         const sec = n.length === 3 ? n[0] * 3600 + n[1] * 60 + n[2] : n[0] * 60 + n[1]
-        return <button key={i} onClick={() => onSeek(sec)} className="mx-0.5 rounded bg-accent/20 px-1 font-mono text-xs text-blue-200 hover:bg-accent/40">{part.slice(1, -1)}</button>
+        return <button key={i} onClick={() => onSeek(sec)} className="mx-0.5 rounded bg-accent/10 px-1 font-mono text-xs text-accent hover:bg-accent/20">{part.slice(1, -1)}</button>
       })}
     </>
   )
@@ -67,7 +68,7 @@ export default function Chat(p: { id: string | null; title: string; ready: boole
               </select>
             )}
             <button title="Clear conversation" className="btn px-2 py-1 text-xs" onClick={async () => { await window.api.chatClear(p.id, scope); setMsgs([]) }}>Clear</button>
-            <button title="Close (Esc)" className="btn px-2 py-1 text-xs" onClick={() => setOpen(false)}>✕</button>
+            <button title="Close (Esc)" className="btn px-2 py-1 text-xs" onClick={() => setOpen(false)}><X className="size-3.5" /></button>
           </div>
 
           <div className="min-h-0 flex-1 space-y-3 overflow-auto p-3">
@@ -75,19 +76,19 @@ export default function Chat(p: { id: string | null; title: string; ready: boole
               <div className="space-y-2 text-sm text-muted">
                 <p>{canAsk ? 'Ask anything. The agent reads the transcripts and answers with timestamps' + (scope === 'this' ? ' you can click to jump.' : '.') : 'Finish transcription first — the agent needs the transcript.'}</p>
                 {canAsk && (scope === 'this' ? SUGGEST_THIS : SUGGEST_ALL).map((s) => (
-                  <button key={s} onClick={() => void send(s)} className="block w-full rounded-lg border border-line px-3 py-2 text-left text-slate-300 hover:bg-panel2">{s}</button>
+                  <button key={s} onClick={() => void send(s)} className="block w-full rounded-lg border border-line px-3 py-2 text-left text-fg2 hover:bg-panel2">{s}</button>
                 ))}
               </div>
             )}
             {msgs.map((m, i) => (
               <div key={i} className={m.role === 'user' ? 'ml-8' : 'mr-4'}>
-                <div className={`whitespace-pre-wrap rounded-xl px-3 py-2 text-sm leading-relaxed ${m.role === 'user' ? 'bg-accent text-white' : 'bg-panel2 text-slate-200'}`}>
+                <div className={`whitespace-pre-wrap rounded-xl px-3 py-2 text-sm leading-relaxed ${m.role === 'user' ? 'bg-accent text-white' : 'bg-panel2 text-fg'}`}>
                   {m.role === 'assistant' ? <Rich text={m.text} onSeek={scope === 'this' ? p.onSeek : undefined} /> : m.text}
                 </div>
               </div>
             ))}
             {busy && <div className="mr-4 rounded-xl bg-panel2 px-3 py-2 text-sm text-muted">Reading the transcript…</div>}
-            {err && <div className="whitespace-pre-wrap rounded-lg bg-red-900/40 px-3 py-2 text-xs text-red-200">{err}</div>}
+            {err && <div className="whitespace-pre-wrap rounded-lg bg-err px-3 py-2 text-xs text-err-fg">{err}</div>}
             <div ref={end} />
           </div>
 
@@ -101,8 +102,8 @@ export default function Chat(p: { id: string | null; title: string; ready: boole
         </div>
       )}
       <button onClick={() => setOpen(!open)} title="Ask the AI agent (Ctrl+/)"
-        className={`fixed bottom-6 right-6 z-40 grid size-14 place-items-center rounded-full text-2xl shadow-lg shadow-black/50 transition hover:scale-105 ${open ? 'bg-panel2 text-slate-300' : 'bg-accent text-white'}`}>
-        {open ? '✕' : '💬'}
+        className={`fixed bottom-6 right-6 z-40 grid size-14 place-items-center rounded-full text-2xl shadow-lg shadow-black/50 transition hover:scale-105 ${open ? 'bg-panel2 text-fg2' : 'bg-accent text-white'}`}>
+        {open ? <X className="size-6" /> : <MessageCircle className="size-6" />}
       </button>
     </>
   )

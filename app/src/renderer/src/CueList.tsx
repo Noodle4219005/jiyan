@@ -11,7 +11,7 @@ export default function CueList(p: { cues: Cue[]; opts: SubOpts; active: number;
     <div>
       {p.cues.map((c, i) => (
         <div key={i} ref={i === p.active ? ref : undefined} onClick={() => p.seek(c.start)}
-          className={`${rowCls} grid grid-cols-[3.25rem_1fr] items-baseline whitespace-pre-line ${i === p.active ? 'bg-blue-900/50' : ''}`}>
+          className={`${rowCls} grid grid-cols-[3.25rem_1fr] items-baseline whitespace-pre-line ${i === p.active ? 'bg-sel' : ''}`}>
           <Time t={c.start} /><span>{cueLabel(c, i, p.opts)}</span>
         </div>
       ))}
