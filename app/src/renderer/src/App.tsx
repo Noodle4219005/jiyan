@@ -12,6 +12,7 @@ import { cueLabel, toCues, toSrt, toVtt, type SubOpts } from './subtitles'
 import SubtitlesPanel, { slug } from './SubtitlesPanel'
 import Timeline, { KIND_LABEL, TYPE_COLOR, TYPE_LABEL, mediaUrl, mmss, renderTimelinePng, spkColor, tag, thumbUrl } from './Timeline'
 import type { Insights, Loaded, Meta, PipelineEvent, UsageSummary } from './types'
+import Select from './Select'
 
 const STAGE: Record<string, string> = { new: 'Not processed', transcribed: 'Transcribed', diarized: 'Speakers found', done: 'Ready' }
 const TABS = [['summary', 'Summary'], ['transcript', 'Transcript'], ['highlights', 'Highlights & tasks'], ['subtitles', 'Subtitles']] as const
@@ -185,10 +186,7 @@ export default function App(): React.JSX.Element {
         <div className="space-y-2.5 p-3">
           <div className="flex items-center gap-2 px-1 pb-1"><span className="grid size-6 place-items-center rounded-[5px] bg-accent font-serif text-[14px] font-bold leading-none text-white">言</span><span className="font-serif text-[15px] font-semibold tracking-wide">記言 <span className="font-sans text-xs font-normal text-muted">Jiyan</span></span></div>
           <label className="block text-[11px] text-muted">What are you importing?
-            <select value={kind} onChange={(e) => setKind(e.target.value)}
-              className="field mt-1 w-full bg-panel">
-              {KINDS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
-            </select>
+            <Select className="mt-1 w-full" value={kind} onChange={setKind} options={KINDS.map(([k, l]) => ({ value: k, label: l }))} />
           </label>
           <button className="btn btn-primary w-full" onClick={async () => { const id = await window.api.importVideo(kind); await refresh(); if (id) await open(id) }}>
             <Plus className="size-4" />Import video or audio
@@ -393,9 +391,7 @@ export default function App(): React.JSX.Element {
                     {mergeFrom && (
                       <div className="flex w-full flex-wrap items-center gap-2 rounded-lg bg-bg px-3 py-2 text-xs">
                         <span>Sometimes one person gets split into two speakers. Merge <b>{names[mergeFrom] || mergeFrom}</b> into</span>
-                        <select value={mergeInto} onChange={(e) => setMergeInto(e.target.value)} className="rounded-md border border-line bg-panel px-2 py-1 text-xs outline-none">
-                          {spkStats.filter(([o]) => o !== mergeFrom).map(([o]) => <option key={o} value={o}>{names[o] || o}</option>)}
-                        </select>
+                        <Select size="sm" value={mergeInto} onChange={setMergeInto} options={spkStats.filter(([o]) => o !== mergeFrom).map(([o]) => ({ value: o, label: names[o] || o }))} />
                         <button className="btn btn-primary px-2 py-1 text-xs" onClick={async () => { await window.api.mergeSpeakers(cur.meta.id, mergeFrom, mergeInto); setMergeFrom(null); await reload() }}>Merge</button>
                         <button className="btn px-2 py-1 text-xs" onClick={() => setMergeFrom(null)}>Cancel</button>
                       </div>
@@ -417,7 +413,7 @@ export default function App(): React.JSX.Element {
               <div className="flex flex-none gap-1 border-b border-line">
                 {TABS.map(([k, label]) => (
                   <button key={k} onClick={() => setTab(k)}
-                    className={`-mb-px border-b-2 px-3 py-1.5 font-serif text-[15px] tracking-wide transition ${tab === k ? 'border-accent font-semibold text-fg' : 'border-transparent text-muted hover:text-fg'}`}>
+                    className={`-mb-px border-b-2 px-3 py-1.5 font-serif text-[15px] transition ${tab === k ? 'border-accent font-semibold text-fg' : 'border-transparent text-muted hover:text-fg'}`}>
                     {label}
                   </button>
                 ))}

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { H3, rowCls, SpkLine, Time } from './Parts'
 import { TYPE_LABEL, mmss } from './Timeline'
 import type { Insights, Seg, Suggestion } from './types'
+import Select from './Select'
 
 /** Show what changed: common prefix/suffix stay plain, the differing middle is struck out and replaced. */
 function Diff({ a, b }: { a: string; b: string }): React.JSX.Element {
@@ -139,9 +140,7 @@ export function TranscriptPane(p: {
       {edit && sel.size > 0 && (
         <div className="sticky top-0 z-10 mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-accent/50 bg-panel2 px-3 py-2 text-xs">
           <span>{sel.size} line(s) selected — these were said by</span>
-          <select value={target || p.speakers[0]} onChange={(e) => setTarget(e.target.value)} className="rounded-md border border-line bg-bg px-2 py-1 text-xs outline-none">
-            {p.speakers.map((sp) => <option key={sp} value={sp}>{nm(sp)}</option>)}
-          </select>
+          <Select size="sm" value={target || p.speakers[0]} onChange={setTarget} options={p.speakers.map((sp) => ({ value: sp, label: nm(sp) }))} />
           <button className="btn btn-primary px-2 py-1 text-xs" onClick={async () => { await p.onEditMany([...sel], { spk: target || p.speakers[0] }); setSel(new Set()) }}>Assign</button>
           <button className="btn px-2 py-1 text-xs" onClick={() => setSel(new Set())}>Clear</button>
           <span className="text-muted">Tip: shift-click a second box to select everything in between.</span>
@@ -168,10 +167,7 @@ export function TranscriptPane(p: {
                     setSel(next); setLast(k)
                   }} />
                 <button className="font-mono text-xs text-muted hover:text-fg" title="Jump here" onClick={() => p.seek(s.start)}>{mmss(s.start)}</button>
-                <select value={s.spk ?? ''} onChange={(e) => void p.onEdit(i, { spk: e.target.value })}
-                  className="rounded-md border border-line bg-bg px-2 py-0.5 text-xs outline-none">
-                  {p.speakers.map((sp) => <option key={sp} value={sp}>{nm(sp)}</option>)}
-                </select>
+                <Select size="sm" value={s.spk ?? ''} onChange={(v) => void p.onEdit(i, { spk: v })} options={p.speakers.map((sp) => ({ value: sp, label: nm(sp) }))} />
                 {s.edited && <button className="ml-auto text-xs text-warnc hover:underline" onClick={() => void p.onEdit(i, null)}>Restore original</button>}
               </div>
               <textarea key={s.text} defaultValue={s.text} rows={1} className={`${input} field-sizing-content resize-none`}
@@ -198,9 +194,7 @@ export function NotesEditor(p: {
   const types = Object.keys(TYPE_LABEL)
   const DelBtn = ({ onClick }: { onClick: () => void }): React.JSX.Element => <button className="btn flex-none px-2 py-1 text-xs" title="Delete" onClick={onClick}><X className="size-3.5" /></button>
   const spkSel = (v: string | undefined, on: (s: string) => void): React.JSX.Element => (
-    <select value={v ?? ''} onChange={(e) => on(e.target.value)} className="w-28 flex-none rounded-md border border-line bg-bg px-2 py-1.5 text-xs outline-none">
-      <option value="">—</option>{p.speakers.map((s) => <option key={s} value={s}>{nm(s)}</option>)}
-    </select>
+    <Select size="sm" className="w-28 flex-none" value={v ?? ''} onChange={on} options={[{ value: '', label: '—' }, ...p.speakers.map((s) => ({ value: s, label: nm(s) }))]} />
   )
   return (
     <div className="max-w-3xl space-y-2">
@@ -217,9 +211,7 @@ export function NotesEditor(p: {
       {(d.highlights ?? []).map((h, i) => (
         <div key={i} className="flex items-center gap-2">
           <Time t={h.t} />
-          <select value={h.type} onChange={(e) => set({ highlights: upd(d.highlights, i, { type: e.target.value }) })} className="w-28 flex-none rounded-md border border-line bg-bg px-2 py-1.5 text-xs outline-none">
-            {types.map((k) => <option key={k} value={k}>{TYPE_LABEL[k]}</option>)}
-          </select>
+          <Select size="sm" className="w-28 flex-none" value={h.type} onChange={(v) => set({ highlights: upd(d.highlights, i, { type: v }) })} options={types.map((k) => ({ value: k, label: TYPE_LABEL[k] }))} />
           <input className={input} value={h.title} onChange={(e) => set({ highlights: upd(d.highlights, i, { title: e.target.value }) })} />
           {spkSel(h.speaker, (s) => set({ highlights: upd(d.highlights, i, { speaker: s || undefined }) }))}
           <DelBtn onClick={() => set({ highlights: del(d.highlights, i) })} />

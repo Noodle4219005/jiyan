@@ -57,6 +57,10 @@
       {
         "from": "../LICENSE",
         "to": "LICENSE"
+      },
+      {
+        "from": "src/renderer/src/fonts/OFL-LXGW-WenKai.txt",
+        "to": "fonts/OFL-LXGW-WenKai.txt"
       }
     ],
     "linux": {

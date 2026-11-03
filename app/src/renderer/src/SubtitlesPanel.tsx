@@ -1,10 +1,10 @@
 import type React from 'react'
 import { Toggle } from './Parts'
+import Select from './Select'
 
 export const LANGS = ['English', 'Traditional Chinese', 'Simplified Chinese', 'Japanese', 'Korean', 'Spanish', 'French', 'German']
 export const slug = (l: string): string => l.replace(/\W+/g, '_')
 
-const sel = 'rounded-md border border-line bg-bg px-3 py-1.5 text-sm outline-none focus:border-accent'
 
 export default function SubtitlesPanel(p: {
   caps: boolean; setCaps: (v: boolean) => void
@@ -23,13 +23,7 @@ export default function SubtitlesPanel(p: {
         <Toggle label="Speaker names" hint="Prefix each line with who said it" on={p.capSpk} onChange={p.setCapSpk} />
         <label className="mt-2 flex items-center gap-3 text-sm">
           <span className="w-28 text-muted">Language</span>
-          <select className={sel} value={p.subSel} onChange={(e) => p.setSubSel(e.target.value)}>
-            <option value="orig">Original</option>
-            {p.translated.flatMap((k) => {
-              const L = LANGS.find((x) => slug(x) === k) ?? k
-              return [<option key={`t${k}`} value={`trans:${L}`}>{L}</option>, <option key={`b${k}`} value={`both:${L}`}>Original + {L}</option>]
-            })}
-          </select>
+          <Select value={p.subSel} onChange={p.setSubSel} options={[{ value: 'orig', label: 'Original' }, ...p.translated.flatMap((k) => { const L = LANGS.find((x) => slug(x) === k) ?? k; return [{ value: `trans:${L}`, label: L }, { value: `both:${L}`, label: `Original + ${L}` }] })]} />
         </label>
       </div>
 
@@ -37,7 +31,7 @@ export default function SubtitlesPanel(p: {
         <h3 className="font-serif text-[15px] font-semibold tracking-wide">Translate</h3>
         <p className="mt-0.5 text-xs text-muted">Uses the AI harness from Settings. Result appears in the Language list above.</p>
         <div className="mt-2 flex items-center gap-2">
-          <select className={sel} value={p.tLang} onChange={(e) => p.setTLang(e.target.value)}>{LANGS.map((l) => <option key={l}>{l}</option>)}</select>
+          <Select value={p.tLang} onChange={p.setTLang} options={LANGS.map((l) => ({ value: l, label: l }))} />
           <button className="btn" onClick={p.onTranslate}>Translate subtitles</button>
         </div>
       </div>

@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Bundled heading font: LXGW WenKai TC (SIL OFL 1.1), subset to ~6.7k common Traditional + Simplified characters.
+   Rarer characters fall back to the system fonts listed in --font-serif. See fonts/OFL-LXGW-WenKai.txt. */
+@font-face { font-family: "Jiyan Kai"; src: url("./fonts/Jiyan-Kai-Regular.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Jiyan Kai"; src: url("./fonts/Jiyan-Kai-Medium.woff2") format("woff2"); font-weight: 500 900; font-style: normal; font-display: swap; }
+
+
 /* Notion-like palette. Light is the default; dark follows the system or the Settings choice. */
 :root {
   color-scheme: light;
@@ -47,7 +53,7 @@
   --color-ok: var(--c-ok);       --color-ok-fg: var(--c-ok-fg); --color-okc: var(--c-okc);
   --color-warn: var(--c-warn);   --color-warn-fg: var(--c-warn-fg); --color-warnc: var(--c-warnc);
   --color-overlay: var(--c-overlay);
-  --font-serif: Georgia, "Noto Serif", "Times New Roman", "LXGW WenKai TC", "LXGW WenKai", "LXGW WenKai Mono TC", "Noto Serif CJK TC", "Source Han Serif TC", "Songti TC", "STSong", "PMingLiU", "MingLiU", "DFKai-SB", KaiTi, serif;
+  --font-serif: "Jiyan Kai", Georgia, "Noto Serif", "Times New Roman", "LXGW WenKai TC", "LXGW WenKai", "LXGW WenKai Mono TC", "Noto Serif CJK TC", "Source Han Serif TC", "Songti TC", "STSong", "PMingLiU", "MingLiU", "DFKai-SB", KaiTi, serif;
   --font-sans: ui-sans-serif, -apple-system, "Segoe UI", Inter, "Noto Sans CJK TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
 }
 

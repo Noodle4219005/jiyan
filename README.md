@@ -53,3 +53,4 @@ npm run dev                                # development window with hot reload
 
 [MIT](LICENSE) — free to use, copy, modify and distribute; keep the copyright notice.
 Jiyan downloads speech and speaker models on first run; each of those, and each dependency, keeps its own licence.
+The heading font is a subset of LXGW WenKai TC under the SIL OFL 1.1; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

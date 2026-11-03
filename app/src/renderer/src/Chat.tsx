@@ -2,6 +2,7 @@ import type React from 'react'
 import { MessageCircle, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { ChatMsg } from './types'
+import Select from './Select'
 
 const SUGGEST_THIS = ['Summarize the key decisions', 'List action items per person', 'What was left unresolved?']
 const SUGGEST_ALL = ['What did we decide across all recordings?', 'Which recordings mention deadlines?', 'List every open question']
@@ -63,9 +64,7 @@ export default function Chat(p: { id: string | null; title: string; ready: boole
               <div className="truncate text-xs text-muted">{scope === 'this' ? p.title : 'All recordings'}</div>
             </div>
             {p.id && (
-              <select value={scopePref} onChange={(e) => setScopePref(e.target.value as 'this' | 'all')} className="rounded-md border border-line bg-bg px-2 py-1 text-xs outline-none">
-                <option value="this">This recording</option><option value="all">All recordings</option>
-              </select>
+              <Select size="sm" value={scopePref} onChange={(v) => setScopePref(v as 'this' | 'all')} options={[{ value: 'this', label: 'This recording' }, { value: 'all', label: 'All recordings' }]} />
             )}
             <button title="Clear conversation" className="btn px-2 py-1 text-xs" onClick={async () => { await window.api.chatClear(p.id, scope); setMsgs([]) }}>Clear</button>
             <button title="Close (Esc)" className="btn px-2 py-1 text-xs" onClick={() => setOpen(false)}><X className="size-3.5" /></button>

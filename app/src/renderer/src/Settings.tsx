@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type React from 'react'
 import { applyTheme, getThemePref, type ThemePref } from './theme'
 import type { Settings } from './types'
+import Select from './Select'
 
 const HINT: Record<Settings['harness'], string> = {
   claude: 'Runs claude -p (uses your Claude Code login). Model examples: sonnet, opus',
@@ -37,10 +38,7 @@ export default function SettingsDialog(p: { onClose: () => void; onFolderChanged
         </div>
         <h3 className="mt-2 font-serif text-[16px] font-semibold tracking-wide">AI analysis harness</h3>
         <label className="flex flex-col gap-1 text-xs text-muted">Harness
-          <select className="rounded-md border border-line bg-bg px-3 py-1.5 text-sm text-fg outline-none focus:border-accent" value={s.harness} onChange={(e) => set('harness', e.target.value)}>
-            <option value="claude">Claude Code</option><option value="codex">Codex</option>
-            <option value="pi">pi</option><option value="custom">Custom command</option>
-          </select>
+          <Select value={s.harness} onChange={(v) => set('harness', v)} options={[{ value: 'claude', label: 'Claude Code' }, { value: 'codex', label: 'Codex' }, { value: 'pi', label: 'pi' }, { value: 'custom', label: 'Custom command' }]} />
         </label>
         <div className="text-xs text-muted">{HINT[s.harness]}</div>
         {s.harness !== 'custom' && (<>
@@ -52,9 +50,7 @@ export default function SettingsDialog(p: { onClose: () => void; onFolderChanged
           <label className="flex flex-col gap-1 text-xs text-muted">Model (replaces {'{model}'})<input className="rounded-md border border-line bg-bg px-3 py-1.5 text-sm text-fg outline-none focus:border-accent" value={s.model} onChange={(e) => set('model', e.target.value)} /></label>
         </>)}
         <label className="flex flex-col gap-1 text-xs text-muted">Output language of AI summary
-          <select className="rounded-md border border-line bg-bg px-3 py-1.5 text-sm text-fg outline-none focus:border-accent" value={s.lang} onChange={(e) => set('lang', e.target.value)}>
-            <option value="auto">Same as the recording</option><option value="en">English</option><option value="zh-TW">Traditional Chinese</option>
-          </select>
+          <Select value={s.lang} onChange={(v) => set('lang', v)} options={[{ value: 'auto', label: 'Same as the recording' }, { value: 'en', label: 'English' }, { value: 'zh-TW', label: 'Traditional Chinese' }]} />
         </label>
         {res && <div className={`whitespace-pre-wrap rounded-md px-3 py-2 text-xs ${res.ok ? 'bg-ok text-ok-fg' : 'bg-err text-err-fg'}`}>{res.ok ? 'Works' : 'Failed'}（{(res.ms / 1000).toFixed(1)} s) ：{res.text}</div>}
         <div className="mt-1 border-t border-line pt-3">
