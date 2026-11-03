@@ -76,7 +76,7 @@ def get_meeting(meeting_id: str) -> dict:
     if not ins:
         return {"id": meeting_id, "error": "not analyzed yet; run the AI analysis step in the app"}
     return {"id": meeting_id, "title": meta["title"], "ai_title": ins.get("title"), "kind": ins.get("kind"), "source": meta["source"],
-            "speakers": {s: _name(names, s) for s in sorted({t["spk"] for t in (tr or {}).get("turns", [])})},
+            "speakers": {s: _name(names, s) for s in sorted({t["spk"] for t in (tr or {}).get("turns", [])} | {s.get("spk") for s in (tr or {}).get("segments", []) if s.get("spk")})},
             "summary": ins.get("summary"), "topics": ins.get("topics", []),
             "highlights": [_named(h, names) for h in ins.get("highlights", [])],
             "action_items": [_named(a, names) for a in ins.get("action_items", [])],

@@ -41,6 +41,7 @@ export default function App(): React.JSX.Element {
   const [tLang, setTLang] = useState('English')
   const [naming, setNaming] = useState(false)
   const [nameNote, setNameNote] = useState('')
+  const [adding, setAdding] = useState<string | null>(null) // name being typed for a new person
   const [mergeFrom, setMergeFrom] = useState<string | null>(null)
   const [mergeInto, setMergeInto] = useState('')
   const [draft, setDraft] = useState<Insights | null>(null) // non-null while editing the AI notes
@@ -54,7 +55,7 @@ export default function App(): React.JSX.Element {
   const refresh = useCallback(async () => setMeetings(await window.api.list()), [])
   const open = useCallback(async (id: string) => {
     curId.current = id
-    setVerr(''); setEditing(null); setTypeFilter(null); setNameNote(''); setDraft(null); setMergeFrom(null)
+    setVerr(''); setEditing(null); setTypeFilter(null); setNameNote(''); setDraft(null); setMergeFrom(null); setAdding(null)
     const l = await window.api.load(id)
     setCur(l); setNames(l.speakers ?? {}); setNow(0); setSubSel('orig')
     if (l.transcript?.turns?.length && !l.namesChecked && !busyRef.current[id]) void autoNames(id, true)
@@ -69,7 +70,8 @@ export default function App(): React.JSX.Element {
       if (e.status !== 'running' && e.status !== 'paused') void refresh()
       if (e.status === 'done' && curId.current === e.id) {
         const tl = /^Translating subtitles to (.+)$/.exec(e.steps?.[0]?.name ?? '')
-        void open(e.id).then(() => { if (tl) { setSubSel(`both:${tl[1]}`); setTab('subtitles') } })
+        const pr = e.steps?.[0]?.name === 'Proofreading with AI'
+        void open(e.id).then(() => { if (tl) { setSubSel(`both:${tl[1]}`); setTab('subtitles') } if (pr) setTab('transcript') })
       }
     })
   }, [refresh, open])
@@ -112,7 +114,7 @@ export default function App(): React.JSX.Element {
   const reload = async (): Promise<void> => {
     if (!cur) return
     const l = await window.api.load(cur.meta.id)
-    setCur((c) => (c && c.meta.id === l.meta.id ? { ...c, transcript: l.transcript, translations: l.translations, insights: l.insights, merge: l.merge } : c))
+    setCur((c) => (c && c.meta.id === l.meta.id ? { ...c, transcript: l.transcript, translations: l.translations, insights: l.insights, merge: l.merge, extra: l.extra, suggestions: l.suggestions } : c))
     setNames(l.speakers ?? {})
   }
   const editSegment = async (idx: number, patch: { text?: string; spk?: string } | null): Promise<void> => {
@@ -125,6 +127,13 @@ export default function App(): React.JSX.Element {
     const n = await window.api.replaceAll(cur.meta.id, find, repl)
     await reload()
     return n
+  }
+  const addPerson = async (): Promise<void> => {
+    if (!cur || !adding?.trim()) return
+    const name = adding.trim()
+    await window.api.addSpeaker(cur.meta.id, name)
+    setAdding(null); await reload(); setTab('transcript')
+    setNameNote(`Added ${name}. Open Transcript → ✎ Proofread, tick the lines ${name} said (shift-click for a range) and press Assign.`)
   }
   const saveDraft = async (): Promise<void> => { if (cur && draft) { await window.api.saveInsights(cur.meta.id, draft); setDraft(null); await reload() } }
   const seek = (t: number): void => { if (video.current) { video.current.currentTime = t; void video.current.play() } }
@@ -153,7 +162,9 @@ export default function App(): React.JSX.Element {
   const ins = cur?.insights
   const active = tr?.segments.find((s) => now >= s.start && now < s.end)
   const segs = tr?.segments.filter((s) => !q || s.text.includes(q)) ?? []
-  const spkStats = Object.entries((tr?.turns ?? []).reduce<Record<string, number>>((m, t) => ({ ...m, [t.spk]: (m[t.spk] ?? 0) + t.e - t.s }), {})).sort((a, b) => b[1] - a[1])
+  const spkTime = (tr?.turns ?? []).reduce<Record<string, number>>((m, t) => ({ ...m, [t.spk]: (m[t.spk] ?? 0) + t.e - t.s }), {})
+  for (const x of cur?.extra ?? []) spkTime[x] ??= 0
+  const spkStats = Object.entries(spkTime).sort((a, b) => b[1] - a[1])
   const stage = meetings.find((m) => m.id === cur?.meta.id)?.stage ?? 'new'
   const prog = cur ? progress[cur.meta.id] : undefined
   const busyOf = (id: string): boolean => progress[id]?.status === 'running' || progress[id]?.status === 'paused'
@@ -333,12 +344,32 @@ export default function App(): React.JSX.Element {
                           onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
                           className="bg-transparent text-slate-200 outline-none placeholder:text-muted" />
                         <span className="text-muted tabular-nums" title="Total speaking time">{mmss(sec)}</span>
+                        {(cur.extra ?? []).includes(s) && (
+                          <button type="button" title="Remove this person (their lines go back to the original speaker)" className="text-muted hover:text-red-300"
+                            onClick={async (e) => { e.preventDefault(); await window.api.removeSpeaker(cur.meta.id, s); await reload() }}>✕</button>
+                        )}
                         {spkStats.length > 1 && (
                           <button type="button" title="This is the same person as another speaker" className="text-muted hover:text-white"
                             onClick={(e) => { e.preventDefault(); setMergeFrom(s); setMergeInto(spkStats.find(([o]) => o !== s)?.[0] ?? '') }}>⇄</button>
                         )}
                       </label>
                     ))}
+                    {adding === null ? (
+                      <button className="btn px-2 py-0.5 text-xs" title="Someone the automatic detection missed — then assign their lines in Transcript → Proofread"
+                        onClick={() => setAdding('')}>＋ Add person</button>
+                    ) : (
+                      <span className="flex items-center gap-1.5">
+                        <input autoFocus value={adding} placeholder="Name" onChange={(e) => setAdding(e.target.value)}
+                          onKeyDown={async (e) => {
+                            if (e.key === 'Escape') setAdding(null)
+                            if (e.key === 'Enter' && adding.trim()) void addPerson()
+                          }}
+                          className="w-32 rounded-md border border-accent bg-bg px-2 py-0.5 text-xs outline-none" />
+                        <button className="btn btn-primary px-2 py-0.5 text-xs" disabled={!adding.trim()}
+                          onClick={() => void addPerson()}>Add</button>
+                        <button className="btn px-2 py-0.5 text-xs" onClick={() => setAdding(null)}>Cancel</button>
+                      </span>
+                    )}
                     {nameNote && <p className="w-full text-xs text-muted">{nameNote}</p>}
                     {mergeFrom && (
                       <div className="flex w-full flex-wrap items-center gap-2 rounded-lg bg-bg px-3 py-2 text-xs">
@@ -407,7 +438,11 @@ export default function App(): React.JSX.Element {
 
                 {tab === 'transcript' && tr && (
                   <TranscriptPane id={cur.meta.id} segs={tr.segments} names={names} speakers={spkStats.map(([s]) => s)} now={now}
-                    q={q} setQ={setQ} seek={seek} onEdit={editSegment} onReplaceAll={replaceAll} />
+                    q={q} setQ={setQ} seek={seek} onEdit={editSegment} onReplaceAll={replaceAll}
+                    onEditMany={async (idxs, patch) => { await window.api.editSegments(cur.meta.id, idxs, patch); await reload() }}
+                    suggestions={cur.suggestions ?? []} terms={cur.terms ?? ''} aiBusy={busyOf(cur.meta.id)}
+                    onAiRun={(terms) => void window.api.proofreadRun(cur.meta.id, terms)}
+                    onResolve={async (accept, dismiss) => { await window.api.proofreadResolve(cur.meta.id, accept, dismiss); await reload() }} />
                 )}
 
                 {tab === 'highlights' && !draft && (ins ? (

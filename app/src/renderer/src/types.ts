@@ -19,7 +19,8 @@ export type SetupEvent = { steps: StepInfo[]; status: 'running' | 'done' | 'erro
 export type Thumbs = { dir: string; step: number }
 export type ChatMsg = { role: 'user' | 'assistant'; text: string; at: number; scope?: string }
 export type NameGuess = { name: string; evidence: string; t: number | null; confidence: 'high' | 'medium' | 'low' }
-export type Loaded = { merge: Record<string, string>; namesChecked: boolean; translations: Record<string, string[]>; speakers: Record<string, string>; thumbs: Thumbs | null; meta: Meta; playback: string; transcript: Transcript | null; insights: Insights | null }
+export type Suggestion = { i: number; from: string; to: string; why?: string }
+export type Loaded = { suggestions: Suggestion[]; terms: string; extra: string[]; merge: Record<string, string>; namesChecked: boolean; translations: Record<string, string[]>; speakers: Record<string, string>; thumbs: Thumbs | null; meta: Meta; playback: string; transcript: Transcript | null; insights: Insights | null }
 export type StepInfo = { name: string; state: 'pending' | 'running' | 'done'; start?: number; end?: number; pausedMs: number; pauseStart?: number }
 export type PipelineEvent = { steps?: StepInfo[]; stepPct?: number | null; id: string; step: string; status: 'running' | 'paused' | 'done' | 'error' | 'cancelled'; message?: string }
 
@@ -39,6 +40,11 @@ declare global {
       setupStatus: () => Promise<SetupStatus>
       setupRun: () => Promise<void>
       onSetup: (cb: (e: SetupEvent) => void) => () => void
+      proofreadRun: (id: string, terms: string) => Promise<void>
+      proofreadResolve: (id: string, accept: { i: number; text: string }[], dismiss: number[]) => Promise<void>
+      addSpeaker: (id: string, name: string) => Promise<string>
+      removeSpeaker: (id: string, label: string) => Promise<void>
+      editSegments: (id: string, idxs: number[], patch: { text?: string; spk?: string }) => Promise<void>
       mergeSpeakers: (id: string, from: string, into: string) => Promise<void>
       unmergeSpeaker: (id: string, from: string) => Promise<void>
       editSegment: (id: string, idx: number, patch: { text?: string; spk?: string } | null) => Promise<void>

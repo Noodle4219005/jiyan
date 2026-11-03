@@ -283,8 +283,8 @@ async function setupRun(win: BrowserWindow): Promise<void> {
 type SegPatch = { text?: string; spk?: string }
 type Seg = { start: number; end: number; text: string; spk?: string; words?: unknown[]; edited?: boolean; orig?: string; origSpk?: string }
 const editsFile = (id: string): string => join(dir(id), 'edits.json')
-type EditsFile = { seg: Record<string, SegPatch>; merge: Record<string, string> } // merge: {S3: 'S0'} = same person
-const readEF = (id: string): EditsFile => { const j = readJson(editsFile(id)) ?? {}; return { seg: j.seg ?? {}, merge: j.merge ?? {} } }
+type EditsFile = { seg: Record<string, SegPatch>; merge: Record<string, string>; extra: string[] } // merge: {S3: 'S0'} = same person; extra: people added by hand
+const readEF = (id: string): EditsFile => { const j = readJson(editsFile(id)) ?? {}; return { seg: j.seg ?? {}, merge: j.merge ?? {}, extra: j.extra ?? [] } }
 const writeEF = (id: string, ef: EditsFile): void => writeFileSync(editsFile(id), JSON.stringify(ef, null, 1))
 const readEdits = (id: string): Record<string, SegPatch> => readEF(id).seg
 const writeEdits = (id: string, seg: Record<string, SegPatch>): void => writeEF(id, { ...readEF(id), seg })
@@ -304,12 +304,23 @@ function withEdits<T extends { segments: Seg[]; turns?: { spk: string }[] }>(id:
   const { seg: ed, merge } = readEF(id)
   tr.segments.forEach((s) => { s.spk = canon(s.spk, merge) })
   tr.turns?.forEach((u) => { u.spk = canon(u.spk, merge) ?? u.spk })
+  const moved: { a: number; b: number; spk: string }[] = []
   tr.segments.forEach((s, i) => {
     const p = ed[String(i)]
     if (!p) return
+    if (p.spk !== undefined && tr.turns) moved.push({ a: s.start, b: s.end, spk: p.spk })
     if (p.text !== undefined) { s.orig = s.text; s.text = p.text; s.edited = true }
     if (p.spk !== undefined) { s.origSpk = s.spk; s.spk = p.spk; s.edited = true }
   })
+  if (tr.turns && moved.length) { // lanes follow the reassignment: cut the old speaker's turns out of that span, add the new one
+    let turns = tr.turns as { s: number; e: number; spk: string }[]
+    for (const { a, b, spk } of moved) {
+      turns = turns.flatMap((u) => (u.spk === spk || u.e <= a || u.s >= b ? [u]
+        : [...(u.s < a ? [{ ...u, e: a }] : []), ...(u.e > b ? [{ ...u, s: b }] : [])]))
+      turns.push({ s: a, e: b, spk })
+    }
+    tr.turns = turns.sort((x, y) => x.s - y.s) as typeof tr.turns
+  }
   return tr
 }
 
@@ -364,6 +375,32 @@ User: ${message}`
   return next
 }
 
+// ───── AI proofreading: proposes corrections into proofread.json; nothing is applied until the user accepts ─────
+type Suggestion = { i: number; from: string; to: string; why?: string }
+async function runProofread(win: BrowserWindow, id: string, terms: string): Promise<void> {
+  if (running.has(id)) return
+  running.add(id)
+  const send = (p: object): void => win.webContents.send('pipeline', { id, ...p })
+  const name = 'Proofreading with AI'
+  const plan: StepInfo[] = [{ name, state: 'running', start: Date.now(), pausedMs: 0 }]
+  runState.set(id, plan)
+  try {
+    writeFileSync(join(dir(id), 'terms.txt'), terms)
+    send({ step: name, status: 'running', stepPct: 0, steps: plan })
+    await runCmd('uv', ['run', 'python', 'proofread.py', join(dir(id), 'spk.json'), join(dir(id), 'proofread.json'), '--terms', terms], {
+      cwd: ROOT, env: { MEETING_HARNESS: JSON.stringify(getSettings()) }, id, step: name,
+      onLine: (l) => { const p = /^PROGRESS ([\d.]+)/.exec(l); if (p) send({ step: name, status: 'running', stepPct: Number(p[1]), steps: plan }) }
+    })
+    plan[0].state = 'done'; plan[0].end = Date.now()
+    send({ step: 'Done', status: 'done', steps: plan })
+  } catch (e) {
+    if (cancelled.has(id)) send({ step: 'Cancelled', status: 'cancelled' })
+    else send({ step: 'Error', status: 'error', message: `AI proofreading failed: ${String(e).slice(0, 600)}` })
+  } finally {
+    running.delete(id); cancelled.delete(id); runState.delete(id)
+  }
+}
+
 function createWindow(): void {
   const win = new BrowserWindow({
     width: 1400, height: 900,
@@ -389,7 +426,10 @@ function createWindow(): void {
     thumbs: existsSync(join(thumbsDir(id), '00001.jpg')) ? { dir: thumbsDir(id), step: THUMB_STEP } : null,
     transcript: withEdits(id, readJson(join(dir(id), 'spk.json')) ?? readJson(join(dir(id), 'transcript.json'))),
     insights: mapInsights(id, readJson(join(dir(id), 'insights.json'))),
-    merge: readEF(id).merge
+    merge: readEF(id).merge,
+    extra: readEF(id).extra,
+    suggestions: (readJson(join(dir(id), 'proofread.json')) ?? []) as Suggestion[],
+    terms: existsSync(join(dir(id), 'terms.txt')) ? readFileSync(join(dir(id), 'terms.txt'), 'utf8') : ''
   }))
   ipcMain.removeHandler('meeting:import')
   ipcMain.handle('meeting:import', async (_e, kind: string) => {
@@ -446,6 +486,51 @@ function createWindow(): void {
   ipcMain.handle('setup:status', () => setupStatus())
   ipcMain.removeHandler('setup:run')
   ipcMain.handle('setup:run', () => void setupRun(win))
+  ipcMain.removeHandler('proofread:run')
+  ipcMain.handle('proofread:run', (_e, id: string, terms: string) => void runProofread(win, id, terms))
+  ipcMain.removeHandler('proofread:resolve')
+  ipcMain.handle('proofread:resolve', (_e, id: string, accept: { i: number; text: string }[], dismiss: number[]) => {
+    if (accept.length) {
+      const ef = readEF(id)
+      for (const a of accept) ef.seg[String(a.i)] = { ...ef.seg[String(a.i)], text: a.text }
+      writeEF(id, ef)
+    }
+    const f = join(dir(id), 'proofread.json')
+    const handled = new Set([...accept.map((a) => a.i), ...dismiss])
+    writeFileSync(f, JSON.stringify(((readJson(f) ?? []) as Suggestion[]).filter((s) => !handled.has(s.i))))
+  })
+  ipcMain.removeHandler('speakers:add')
+  ipcMain.handle('speakers:add', (_e, id: string, name: string) => {
+    const ef = readEF(id)
+    const tr = readJson(join(dir(id), 'spk.json')) as { segments: { spk?: string }[] } | null
+    const used = new Set([...ef.extra, ...(tr?.segments ?? []).map((s) => s.spk ?? '')])
+    let n = 1
+    while (used.has(`P${n}`)) n++
+    const label = `P${n}`
+    ef.extra.push(label); writeEF(id, ef)
+    const nf = join(dir(id), 'speakers.json')
+    const names = (readJson(nf) ?? {}) as Record<string, string>
+    if (name.trim()) names[label] = name.trim()
+    writeFileSync(nf, JSON.stringify(names, null, 1))
+    return label
+  })
+  ipcMain.removeHandler('speakers:remove')
+  ipcMain.handle('speakers:remove', (_e, id: string, label: string) => {
+    const ef = readEF(id)
+    ef.extra = ef.extra.filter((x) => x !== label)
+    for (const k of Object.keys(ef.seg)) if (ef.seg[k].spk === label) { delete ef.seg[k].spk; if (!Object.keys(ef.seg[k]).length) delete ef.seg[k] }
+    writeEF(id, ef)
+    const nf = join(dir(id), 'speakers.json')
+    const names = (readJson(nf) ?? {}) as Record<string, string>
+    delete names[label]
+    writeFileSync(nf, JSON.stringify(names, null, 1))
+  })
+  ipcMain.removeHandler('edit:segments')
+  ipcMain.handle('edit:segments', (_e, id: string, idxs: number[], patch: SegPatch) => {
+    const ef = readEF(id)
+    for (const i of idxs) ef.seg[String(i)] = { ...ef.seg[String(i)], ...patch }
+    writeEF(id, ef)
+  })
   ipcMain.removeHandler('speakers:merge')
   ipcMain.handle('speakers:merge', (_e, id: string, from: string, into: string) => {
     if (from === into) return

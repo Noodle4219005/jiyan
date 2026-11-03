@@ -18,6 +18,11 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.on('setup', h)
     return () => ipcRenderer.removeListener('setup', h)
   },
+  proofreadRun: (id: string, terms: string) => ipcRenderer.invoke('proofread:run', id, terms),
+  proofreadResolve: (id: string, accept: unknown, dismiss: unknown) => ipcRenderer.invoke('proofread:resolve', id, accept, dismiss),
+  addSpeaker: (id: string, name: string) => ipcRenderer.invoke('speakers:add', id, name),
+  removeSpeaker: (id: string, label: string) => ipcRenderer.invoke('speakers:remove', id, label),
+  editSegments: (id: string, idxs: number[], patch: unknown) => ipcRenderer.invoke('edit:segments', id, idxs, patch),
   mergeSpeakers: (id: string, from: string, into: string) => ipcRenderer.invoke('speakers:merge', id, from, into),
   unmergeSpeaker: (id: string, from: string) => ipcRenderer.invoke('speakers:unmerge', id, from),
   editSegment: (id: string, idx: number, patch: unknown) => ipcRenderer.invoke('edit:segment', id, idx, patch),
