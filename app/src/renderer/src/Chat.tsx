@@ -59,7 +59,7 @@ export default function Chat(p: { id: string | null; title: string; ready: boole
         <div className="fixed bottom-24 right-6 z-30 flex h-[min(620px,calc(100vh-8rem))] w-[400px] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl shadow-black/20">
           <div className="flex items-center gap-2 border-b border-line p-3">
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-semibold">Ask the AI agent</div>
+              <div className="font-serif text-[15px] font-semibold tracking-wide">Ask the AI agent</div>
               <div className="truncate text-xs text-muted">{scope === 'this' ? p.title : 'All recordings'}</div>
             </div>
             {p.id && (

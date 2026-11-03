@@ -34,7 +34,7 @@ export default function SetupDialog(p: { onClose: () => void }): React.JSX.Eleme
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-overlay backdrop-blur-[2px]">
       <div className="max-h-[90vh] w-[560px] overflow-auto rounded-xl border border-line bg-panel p-5 shadow-2xl">
-        <h2 className="text-base font-semibold">Set up Jiyan</h2>
+        <h2 className="font-serif text-[18px] font-semibold tracking-wide">Set up Jiyan 記言</h2>
         <p className="mt-1 text-xs text-muted">One-time setup. Everything runs on this computer; only the AI summary uses the assistant you choose.</p>
 
         <div className="mt-3 divide-y divide-line">

@@ -16,7 +16,7 @@ const Stat = ({ title, a }: { title: string; a: UsageAgg }): React.JSX.Element =
 )
 const Table = ({ title, rows, label }: { title: string; rows: UsageRow[]; label?: (k: string) => string }): React.JSX.Element => (
   <div>
-    <h3 className="mb-1 text-xs font-medium uppercase tracking-wider text-muted">{title}</h3>
+    <h3 className="mb-1 font-serif text-[13.5px] font-semibold tracking-wider text-fg2">{title}</h3>
     {rows.length === 0 ? <p className="text-xs text-muted">No calls yet.</p> : (
       <table className="w-full text-xs tabular-nums">
         <tbody>
@@ -41,7 +41,7 @@ export default function UsageDialog(p: { onClose: () => void }): React.JSX.Eleme
     <div className="fixed inset-0 z-50 grid place-items-center bg-overlay backdrop-blur-[2px]" onClick={p.onClose}>
       <div className="max-h-[90vh] w-[680px] overflow-auto rounded-xl border border-line bg-panel p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center">
-          <h2 className="flex-1 text-base font-semibold">AI token usage</h2>
+          <h2 className="flex-1 font-serif text-[18px] font-semibold tracking-wide">AI token usage</h2>
           <button className="btn px-2 py-1 text-xs" onClick={p.onClose}><X className="size-3.5" /></button>
         </div>
         {!u ? <p className="mt-3 text-sm text-muted">Loading…</p> : (
@@ -52,7 +52,7 @@ export default function UsageDialog(p: { onClose: () => void }): React.JSX.Eleme
               <Table title="By assistant / model" rows={u.byModel} />
               <div className="col-span-2"><Table title="By recording" rows={u.byRecording} /></div>
             </div>
-            <h3 className="mb-1 mt-4 text-xs font-medium uppercase tracking-wider text-muted">Latest calls</h3>
+            <h3 className="mb-1 mt-4 font-serif text-[13.5px] font-semibold tracking-wider text-fg2">Latest calls</h3>
             <table className="w-full text-xs tabular-nums">
               <tbody>
                 {u.recent.map((r, i) => (

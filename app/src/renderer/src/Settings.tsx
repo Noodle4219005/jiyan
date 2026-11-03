@@ -23,19 +23,19 @@ export default function SettingsDialog(p: { onClose: () => void; onFolderChanged
   return (
     <div className="fixed inset-0 z-20 grid place-items-center bg-overlay backdrop-blur-[2px]" onClick={p.onClose}>
       <div className="flex w-[480px] flex-col gap-3 rounded-xl border border-line bg-panel p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-base font-semibold">Appearance</h3>
+        <h3 className="font-serif text-[16px] font-semibold tracking-wide">Appearance</h3>
         <div className="inline-flex self-start rounded-md bg-panel2 p-0.5 text-[13px]">
           {(['system', 'light', 'dark'] as const).map((k) => (
             <button key={k} onClick={() => { setTheme(k); applyTheme(k) }}
               className={`rounded px-3 py-1 capitalize transition ${theme === k ? 'bg-bg text-fg shadow-sm' : 'text-muted hover:text-fg'}`}>{k}</button>
           ))}
         </div>
-        <h3 className="text-base font-semibold">Project folder</h3>
+        <h3 className="font-serif text-[16px] font-semibold tracking-wide">Project folder</h3>
         <div className="flex items-center gap-2">
           <code className="min-w-0 flex-1 truncate rounded-md border border-line bg-bg px-3 py-1.5 text-xs text-fg2" title={dataDir}>{dataDir}</code>
           <button className="btn" onClick={async () => { const d = await window.api.chooseDir(); if (d) { setDataDir(d); p.onFolderChanged() } }}>Change…</button>
         </div>
-        <h3 className="mt-2 text-base font-semibold">AI analysis harness</h3>
+        <h3 className="mt-2 font-serif text-[16px] font-semibold tracking-wide">AI analysis harness</h3>
         <label className="flex flex-col gap-1 text-xs text-muted">Harness
           <select className="rounded-md border border-line bg-bg px-3 py-1.5 text-sm text-fg outline-none focus:border-accent" value={s.harness} onChange={(e) => set('harness', e.target.value)}>
             <option value="claude">Claude Code</option><option value="codex">Codex</option>
@@ -58,7 +58,7 @@ export default function SettingsDialog(p: { onClose: () => void; onFolderChanged
         </label>
         {res && <div className={`whitespace-pre-wrap rounded-md px-3 py-2 text-xs ${res.ok ? 'bg-ok text-ok-fg' : 'bg-err text-err-fg'}`}>{res.ok ? 'Works' : 'Failed'}（{(res.ms / 1000).toFixed(1)} s) ：{res.text}</div>}
         <div className="mt-1 border-t border-line pt-3">
-          <h3 className="text-base font-semibold">Use from Claude Code / Codex</h3>
+          <h3 className="font-serif text-[16px] font-semibold tracking-wide">Use from Claude Code / Codex</h3>
           <p className="mt-0.5 text-xs text-muted">Run one of these once in a terminal so the agent can search and read your recordings.</p>
           {[['Claude Code', 'claude'], ['Codex', 'codex']].map(([label, bin]) => {
             const c = `${bin} mcp add jiyan -- uv run --project ${root} python ${root}/mcp_server.py`

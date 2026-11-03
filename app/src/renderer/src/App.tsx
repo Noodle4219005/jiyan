@@ -15,6 +15,7 @@ import type { Insights, Loaded, Meta, PipelineEvent, UsageSummary } from './type
 
 const STAGE: Record<string, string> = { new: 'Not processed', transcribed: 'Transcribed', diarized: 'Speakers found', done: 'Ready' }
 const TABS = [['summary', 'Summary'], ['transcript', 'Transcript'], ['highlights', 'Highlights & tasks'], ['subtitles', 'Subtitles']] as const
+const KIND_SEAL: Record<string, string> = { meeting: '會議', lecture: '課堂', recording: '錄音' } // seal-style stamp for the recording type
 const KINDS = [['meeting', 'Meeting'], ['lecture', 'Lecture / course'], ['recording', 'Other recording']] as const
 
 const Chip = ({ color, children }: { color: string; children: React.ReactNode }): React.JSX.Element => (
@@ -198,7 +199,7 @@ export default function App(): React.JSX.Element {
           {meetings.length === 0 && <p className="px-2 py-3 text-xs text-muted">No recordings yet.</p>}
           {meetings.map((m) => (
             <div key={m.id} onClick={() => void open(m.id)}
-              className={`group cursor-pointer rounded-md px-2.5 py-1.5 transition ${cur?.meta.id === m.id ? 'bg-panel2' : 'hover:bg-panel2/60'}`}>
+              className={`group cursor-pointer rounded-md px-2.5 py-1.5 transition ${cur?.meta.id === m.id ? 'bg-panel2 shadow-[inset_2px_0_0_var(--c-accent)]' : 'hover:bg-panel2/60'}`}>
               <div className="flex items-center gap-1">
                 <div className={`min-w-0 flex-1 truncate text-[13.5px] ${cur?.meta.id === m.id ? 'font-medium text-fg' : 'text-fg2'}`}>{m.title}</div>
                 <button title="Delete this recording from the app" className="rounded px-1.5 text-muted opacity-0 transition hover:bg-err hover:text-err-fg group-hover:opacity-100"
@@ -226,17 +227,23 @@ export default function App(): React.JSX.Element {
       {/* ───────── main ───────── */}
       <main className="@container min-w-0 overflow-auto">
         {!cur && (
-          <div className="mx-auto mt-24 max-w-md text-center">
-            <h1 className="font-serif text-2xl font-semibold tracking-wide">記言 · Turn recordings into notes</h1>
-            <ol className="mt-6 space-y-3 text-left text-sm text-fg2">
+          <div className="relative mx-auto mt-20 max-w-md overflow-visible">
+            <span aria-hidden className="pointer-events-none absolute -right-10 -top-14 select-none font-serif text-[220px] font-bold leading-none text-accent opacity-[0.06]">言</span>
+            <div className="relative text-center">
+              <div className="mx-auto mb-4 grid size-12 place-items-center rounded-[8px] bg-accent font-serif text-[28px] font-bold leading-none text-white shadow-sm">言</div>
+              <h1 className="font-serif text-[26px] font-semibold tracking-[0.12em]">記言</h1>
+              <p className="mt-1 text-sm text-muted">Turn recordings into notes</p>
+              <div className="mx-auto my-5 flex items-center justify-center gap-3 text-accent"><i className="h-px w-12 bg-line" /><i className="size-1.5 rotate-45 bg-accent" /><i className="h-px w-12 bg-line" /></div>
+            </div>
+            <ol className="relative space-y-4 text-left text-[14px] text-fg2">
               {[
                 <>Pick the type, then click <i>Import video or audio</i>.</>,
                 <>The app transcribes, finds who spoke and writes an AI summary.</>,
                 <>Browse the timeline, highlights and subtitles; export, or ask Claude Code / Codex through MCP.</>
               ].map((t, k) => (
-                <li key={k} className="flex items-start gap-3">
-                  <span className="mt-px grid size-5 flex-none place-items-center rounded-full bg-accent/15 text-xs font-semibold text-link">{k + 1}</span>
-                  <span className="min-w-0 flex-1 leading-relaxed">{t}</span>
+                <li key={k} className="flex items-start gap-3.5">
+                  <span className="mt-px grid size-7 flex-none place-items-center rounded-[4px] border border-accent/70 font-serif text-[15px] leading-none text-link">{['一', '二', '三'][k]}</span>
+                  <span className="min-w-0 flex-1 pt-0.5 leading-relaxed">{t}</span>
                 </li>
               ))}
             </ol>
@@ -250,7 +257,7 @@ export default function App(): React.JSX.Element {
                 <>
                   <h1 className="min-w-0 cursor-text truncate font-serif text-[30px] font-bold leading-tight" title="Click to rename" onClick={() => setEditing(cur.meta.title)}>{cur.meta.title}</h1>
                   <Pencil className="size-4 flex-none text-muted opacity-0 transition group-hover:opacity-100" />
-                  <span className="flex-none text-xs text-muted">{kindOf(cur.meta)}</span>
+                  <span className="flex-none -translate-y-px rounded-[3px] border border-accent/70 px-1.5 py-px font-serif text-[12px] leading-snug text-link" title={kindOf(cur.meta)}>{KIND_SEAL[cur.meta.kind ?? 'meeting'] ?? '記言'}</span>
                   {ins?.title && ins.title !== cur.meta.title && (
                     <button className="btn flex-none text-xs opacity-0 transition group-hover:opacity-100" title={ins.title} onClick={() => void saveTitle(ins.title!)}><Sparkles className="size-3.5" />Use AI title</button>
                   )}
@@ -410,7 +417,7 @@ export default function App(): React.JSX.Element {
               <div className="flex flex-none gap-1 border-b border-line">
                 {TABS.map(([k, label]) => (
                   <button key={k} onClick={() => setTab(k)}
-                    className={`-mb-px border-b-2 px-3 py-1.5 text-[13.5px] transition ${tab === k ? 'border-fg font-medium text-fg' : 'border-transparent text-muted hover:text-fg'}`}>
+                    className={`-mb-px border-b-2 px-3 py-1.5 font-serif text-[15px] tracking-wide transition ${tab === k ? 'border-accent font-semibold text-fg' : 'border-transparent text-muted hover:text-fg'}`}>
                     {label}
                   </button>
                 ))}
@@ -437,7 +444,7 @@ export default function App(): React.JSX.Element {
                 )}
                 {tab === 'summary' && !draft && (ins ? (
                   <div className="max-w-3xl">
-                    <h2 className="text-lg font-semibold">{ins.title ?? cur.meta.title}</h2>
+                    <h2 className="font-serif text-[20px] font-semibold tracking-wide">{ins.title ?? cur.meta.title}</h2>
                     <p className="mt-2 leading-relaxed text-fg2">{ins.summary}</p>
                     <H3>{cur.meta.kind === 'lecture' || ins.kind === 'lecture' ? 'Chapters' : 'Topics'} — click to jump</H3>
                     {ins.topics?.map((t, i) => <div key={i} className={rowCls} onClick={() => seek(t.t)}><Time t={t.t} />{t.title}</div>)}

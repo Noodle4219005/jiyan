@@ -11,11 +11,11 @@ export const dur = (ms: number): string => {
 export const Card = ({ title, hint, right, children, className = '' }: {
   title?: string; hint?: string; right?: React.ReactNode; children: React.ReactNode; className?: string
 }): React.JSX.Element => (
-  <section className={`rounded-xl border border-line bg-panel p-4 ${className}`}>
+  <section className={`rounded-xl border border-line bg-panel p-4 ${className} shadow-[inset_0_0_0_3px_var(--c-bg),inset_0_0_0_4px_var(--c-line)]`}>
     {(title || right) && (
       <header className="mb-3 flex items-start gap-3">
         <div className="min-w-0 flex-1">
-          {title && <h2 className="text-sm font-semibold text-fg">{title}</h2>}
+          {title && <h2 className="flex items-center gap-2 font-serif text-[16px] font-semibold tracking-wide text-fg"><i className="inline-block h-3.5 w-[3px] flex-none rounded-sm bg-accent" />{title}</h2>}
           {hint && <p className="mt-0.5 text-xs text-muted">{hint}</p>}
         </div>
         {right}
@@ -46,7 +46,7 @@ export const SpkLine = ({ s, names }: { s?: string; names: Record<string, string
 export const Time = ({ t }: { t: number }): React.JSX.Element => <b className="mr-1.5 font-mono text-xs font-normal text-muted tabular-nums">{mmss(t)}</b>
 export const rowCls = 'cursor-pointer rounded-md px-2.5 py-1.5 text-sm leading-relaxed hover:bg-panel2'
 export const H3 = ({ children }: { children: React.ReactNode }): React.JSX.Element => (
-  <h3 className="mb-1 mt-5 text-xs font-medium uppercase tracking-wider text-muted first:mt-0">{children}</h3>
+  <h3 className="mb-1.5 mt-6 flex items-center gap-2 font-serif text-[13.5px] font-semibold tracking-wider text-fg2 first:mt-0"><i className="inline-block size-1.5 rotate-45 bg-accent" />{children}</h3>
 )
 
 export const Steps = ({ steps, now, pct }: { steps: StepInfo[]; now: number; pct?: number | null }): React.JSX.Element => (
