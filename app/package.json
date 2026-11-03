@@ -53,6 +53,10 @@
           "uv.lock",
           ".python-version"
         ]
+      },
+      {
+        "from": "../LICENSE",
+        "to": "LICENSE"
       }
     ],
     "linux": {
@@ -83,5 +87,6 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Noodle4219005/jiyan.git"
-  }
+  },
+  "license": "0BSD"
 }

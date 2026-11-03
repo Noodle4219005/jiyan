@@ -48,3 +48,8 @@ Your original video/audio files are never modified or moved.
 cd app && npm install && npm run dist      # writes app/dist/Jiyan-<version>.AppImage and .deb
 npm run dev                                # development window with hot reload
 ```
+
+## License
+
+[0BSD](LICENSE) — use, copy, modify and distribute for any purpose, no attribution required.
+Jiyan downloads speech and speaker models on first run; each of those, and each dependency, keeps its own licence.

@@ -2,6 +2,7 @@
 name = "jiyan"
 version = "0.1.0"
 requires-python = ">=3.12"
+license = "0BSD"
 dependencies = [
     "faster-whisper>=1.2.1",
     "mcp>=2.3.0",
