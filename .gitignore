@@ -1,0 +1,14 @@
+# environments and downloads
+.venv/
+models/
+node_modules/
+__pycache__/
+*.pyc
+# build output
+out/
+dist/
+app/out/
+app/dist/
+# local scratch
+*.log
+.DS_Store

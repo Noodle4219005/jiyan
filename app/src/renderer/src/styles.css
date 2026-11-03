@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #0f1115;
+  --color-panel: #171a20;
+  --color-panel2: #1e222a;
+  --color-line: #2a2f39;
+  --color-muted: #8b93a1;
+  --color-accent: #3b82f6;
+  --font-sans: system-ui, "Noto Sans CJK TC", "PingFang TC", sans-serif;
+}
+
+html, body, #root { height: 100%; }
+body { @apply bg-bg text-slate-200 font-sans antialiased; color-scheme: dark; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #2a2f39; border-radius: 6px; }
+
+@layer components {
+  .btn { @apply rounded-md border border-line bg-panel2 px-3 py-1.5 text-sm text-slate-200 transition hover:bg-line disabled:opacity-50; }
+  .btn-primary { @apply border-accent bg-accent text-white hover:bg-blue-500; }
+}
+
+
+@keyframes slide { 0% { margin-left: -33%; } 100% { margin-left: 100%; } }

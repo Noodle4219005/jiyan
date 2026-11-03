@@ -1,0 +1,87 @@
+{
+  "name": "jiyan",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "dist": "electron-vite build && electron-builder --linux AppImage deb"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.4",
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.2.1",
+    "electron": "^45.2.1",
+    "electron-builder": "^26.18.0",
+    "electron-vite": "^6.0.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "tailwindcss": "^4.3.4",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5"
+  },
+  "description": "Turn meeting and lecture recordings into searchable notes: transcript, speakers, highlights, subtitles, AI chat.",
+  "author": {
+    "name": "Noodle4219005",
+    "email": "65808923+Noodle4219005@users.noreply.github.com"
+  },
+  "homepage": "https://github.com/Noodle4219005/jiyan",
+  "build": {
+    "appId": "io.github.noodle4219005.jiyan",
+    "productName": "Jiyan",
+    "executableName": "jiyan",
+    "artifactName": "Jiyan-${version}.${ext}",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "out/**",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "..",
+        "to": "pipeline",
+        "filter": [
+          "*.py",
+          "pyproject.toml",
+          "uv.lock",
+          ".python-version"
+        ]
+      }
+    ],
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "AudioVideo",
+      "icon": "build/icon.png",
+      "maintainer": "Noodle4219005 <65808923+Noodle4219005@users.noreply.github.com>",
+      "synopsis": "Local notes from meeting and lecture recordings"
+    },
+    "deb": {
+      "depends": [
+        "ffmpeg",
+        "libgtk-3-0",
+        "libnotify4",
+        "libnss3",
+        "libxss1",
+        "libxtst6",
+        "xdg-utils",
+        "libatspi2.0-0",
+        "libuuid1",
+        "libsecret-1-0"
+      ]
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Noodle4219005/jiyan.git"
+  }
+}
