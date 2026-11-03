@@ -11,6 +11,8 @@ export const TYPE_LABEL: Record<string, string> = {
   definition: 'Definition', example: 'Example', key_point: 'Key point', exam: 'Exam hint'
 }
 export const KIND_LABEL: Record<string, string> = { meeting: 'Meeting', lecture: 'Lecture', recording: 'Recording' }
+/** Soft tag colours: translucent hue background, text = hue mixed into the theme's text colour (readable in light and dark). */
+export const tint = (c: string): React.CSSProperties => ({ background: `color-mix(in srgb, ${c} 17%, transparent)`, color: `color-mix(in srgb, ${c} 58%, var(--c-fg))` })
 export const SPK_COLOR = ['#60a5fa', '#f472b6', '#34d399', '#fbbf24', '#a78bfa', '#fb923c']
 export const spkColor = (s?: string): string => SPK_COLOR[Number((s ?? 'S0').slice(1)) % SPK_COLOR.length]
 export const mmss = (t: number): string => `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(Math.floor(t % 60)).padStart(2, '0')}`
@@ -36,7 +38,7 @@ export default function Timeline(p: {
   }
   return (
     <div className="relative">
-      <svg className="h-28 w-full cursor-pointer rounded-lg border border-line bg-panel" viewBox={`0 0 ${W} ${total}`} preserveAspectRatio="none"
+      <svg className="h-28 w-full cursor-pointer rounded-lg border border-line bg-panel2/50" viewBox={`0 0 ${W} ${total}`} preserveAspectRatio="none"
         onClick={(e) => p.onSeek(at(e).t)} onMouseMove={(e) => setHover(at(e))} onMouseLeave={() => setHover(null)}>
         {p.ins?.heat.map((h) => (
           <rect key={h.t} x={x(h.t)} width={Math.max(x(p.ins!.bin) - 1, 1)} y={HEAT - h.score * HEAT}
@@ -56,7 +58,7 @@ export default function Timeline(p: {
       {hover && (
         <div className="pointer-events-none absolute bottom-[calc(100%+8px)] z-10 w-48 rounded-lg border border-line bg-panel2 p-1.5 text-xs shadow-xl" style={{ left: Math.max(0, Math.min(hover.px - 96, hover.w - 192)) }}>
           {p.thumbs && <img className="block w-full rounded" src={thumbUrl(p.thumbs, hover.t)} />}
-          <div className="mt-1 flex items-center gap-1.5"><b className="tabular-nums">{mmss(hover.t)}</b>{near && <span className="rounded-full px-2 py-px text-[10px] font-medium text-black" style={{ background: TYPE_COLOR[near.type] }}>{TYPE_LABEL[near.type] ?? near.type}</span>}</div>
+          <div className="mt-1 flex items-center gap-1.5"><b className="tabular-nums">{mmss(hover.t)}</b>{near && <span className="rounded-full px-2 py-px text-[10px] font-medium" style={tint(TYPE_COLOR[near.type] ?? '#999')}>{TYPE_LABEL[near.type] ?? near.type}</span>}</div>
           {near && <div className="mt-0.5 text-fg2">{near.title}</div>}
         </div>
       )}

@@ -56,7 +56,7 @@ export default function Chat(p: { id: string | null; title: string; ready: boole
   return (
     <>
       {open && (
-        <div className="fixed bottom-24 right-6 z-30 flex h-[min(620px,calc(100vh-8rem))] w-[400px] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl shadow-black/50">
+        <div className="fixed bottom-24 right-6 z-30 flex h-[min(620px,calc(100vh-8rem))] w-[400px] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl shadow-black/20">
           <div className="flex items-center gap-2 border-b border-line p-3">
             <div className="min-w-0 flex-1">
               <div className="text-sm font-semibold">Ask the AI agent</div>
@@ -102,7 +102,7 @@ export default function Chat(p: { id: string | null; title: string; ready: boole
         </div>
       )}
       <button onClick={() => setOpen(!open)} title="Ask the AI agent (Ctrl+/)"
-        className={`fixed bottom-6 right-6 z-40 grid size-14 place-items-center rounded-full text-2xl shadow-lg shadow-black/50 transition hover:scale-105 ${open ? 'bg-panel2 text-fg2' : 'bg-accent text-white'}`}>
+        className={`fixed bottom-6 right-6 z-40 grid size-14 place-items-center rounded-full text-2xl shadow-lg shadow-black/20 transition hover:scale-105 ${open ? 'bg-panel2 text-fg2' : 'bg-accent text-white'}`}>
         {open ? <X className="size-6" /> : <MessageCircle className="size-6" />}
       </button>
     </>

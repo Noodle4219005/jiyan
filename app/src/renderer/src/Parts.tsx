@@ -1,6 +1,6 @@
 import type React from 'react'
 import { Check, Pause } from 'lucide-react'
-import { mmss, spkColor } from './Timeline'
+import { mmss, spkColor, tint } from './Timeline'
 import type { StepInfo } from './types'
 
 export const dur = (ms: number): string => {
@@ -28,7 +28,7 @@ export const Card = ({ title, hint, right, children, className = '' }: {
 export const Toggle = ({ label, hint, on, onChange }: { label: string; hint?: string; on: boolean; onChange: (v: boolean) => void }): React.JSX.Element => (
   <label className="flex cursor-pointer items-center gap-3 py-1.5">
     <button type="button" role="switch" aria-checked={on} onClick={() => onChange(!on)}
-      className={`relative h-5 w-9 flex-none rounded-full transition ${on ? 'bg-accent' : 'bg-line'}`}>
+      className={`relative h-5 w-9 flex-none rounded-full transition ${on ? 'bg-accent' : 'bg-fg/25'}`}>
       <i className={`absolute top-0.5 size-4 rounded-full bg-white transition-all ${on ? 'left-[18px]' : 'left-0.5'}`} />
     </button>
     <span className="text-sm">{label}{hint && <span className="ml-2 text-xs text-muted">{hint}</span>}</span>
@@ -36,7 +36,7 @@ export const Toggle = ({ label, hint, on, onChange }: { label: string; hint?: st
 )
 
 export const Spk = ({ s, names }: { s?: string; names: Record<string, string> }): React.JSX.Element => (
-  <span className="mx-1.5 rounded-full px-2 py-px text-[11px] font-medium text-black" style={{ background: spkColor(s) }}>{(s && names[s]) || s || '?'}</span>
+  <span className="mx-1.5 rounded-full px-2 py-px text-[11px] font-medium" style={tint(spkColor(s))}>{(s && names[s]) || s || '?'}</span>
 )
 export const SpkLine = ({ s, names }: { s?: string; names: Record<string, string> }): React.JSX.Element => (
   <div className="flex items-center gap-1.5 text-xs font-medium text-fg2">
@@ -63,7 +63,7 @@ export const Steps = ({ steps, now, pct }: { steps: StepInfo[]; now: number; pct
               {s.state === 'running' && pct != null && `${Math.round(pct * 100)}% · `}{s.state === 'pending' ? '' : dur(el)}
             </span>
           </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-bg">
+          <div className="h-1.5 overflow-hidden rounded-full bg-panel2">
             {frac == null
               ? <div className={`h-full w-1/3 rounded-full bg-accent ${paused ? '' : 'animate-[slide_1.2s_ease-in-out_infinite]'}`} />
               : <div className={`h-full rounded-full transition-[width] duration-300 ${s.state === 'done' ? 'bg-emerald-500' : paused ? 'bg-amber-400' : 'bg-accent'}`}

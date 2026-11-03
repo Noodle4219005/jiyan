@@ -10,7 +10,7 @@ import SetupDialog, { setupReady } from './SetupDialog'
 import UsageDialog, { fmtCost, fmtTok } from './UsageDialog'
 import { cueLabel, toCues, toSrt, toVtt, type SubOpts } from './subtitles'
 import SubtitlesPanel, { slug } from './SubtitlesPanel'
-import Timeline, { KIND_LABEL, TYPE_COLOR, TYPE_LABEL, mediaUrl, mmss, renderTimelinePng, spkColor, thumbUrl } from './Timeline'
+import Timeline, { KIND_LABEL, TYPE_COLOR, TYPE_LABEL, mediaUrl, mmss, renderTimelinePng, spkColor, thumbUrl, tint } from './Timeline'
 import type { Insights, Loaded, Meta, PipelineEvent, UsageSummary } from './types'
 
 const STAGE: Record<string, string> = { new: 'Not processed', transcribed: 'Transcribed', diarized: 'Speakers found', done: 'Ready' }
@@ -18,7 +18,7 @@ const TABS = [['summary', 'Summary'], ['transcript', 'Transcript'], ['highlights
 const KINDS = [['meeting', 'Meeting'], ['lecture', 'Lecture / course'], ['recording', 'Other recording']] as const
 
 const Chip = ({ color, children }: { color: string; children: React.ReactNode }): React.JSX.Element => (
-  <span className="rounded-full px-2 py-px text-[11px] font-medium text-black" style={{ background: color }}>{children}</span>
+  <span className="rounded-full px-2 py-px text-[11px] font-medium" style={tint(color)}>{children}</span>
 )
 const Badge = ({ children }: { children: React.ReactNode }): React.JSX.Element => (
   <span className="rounded border border-line px-1.5 py-px text-[10px] uppercase tracking-wide text-muted">{children}</span>
