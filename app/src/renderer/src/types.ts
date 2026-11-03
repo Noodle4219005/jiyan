@@ -35,6 +35,7 @@ declare global {
   interface Window {
     api: {
       platform: string
+      setOrder: (ids: string[]) => Promise<void>
       list: () => Promise<Meta[]>
       load: (id: string) => Promise<Loaded>
       importVideo: (kind: string) => Promise<string | null>

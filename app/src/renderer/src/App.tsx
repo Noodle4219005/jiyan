@@ -48,6 +48,7 @@ export default function App(): React.JSX.Element {
   const [tLang, setTLang] = useState('English')
   const [naming, setNaming] = useState(false)
   const [nameNote, setNameNote] = useState('')
+  const [drag, setDrag] = useState<{ id: string | null; over: string | null; after: boolean }>({ id: null, over: null, after: false }) // sidebar drag-to-reorder
   const [adding, setAdding] = useState<string | null>(null) // name being typed for a new person
   const [mergeFrom, setMergeFrom] = useState<string | null>(null)
   const [mergeInto, setMergeInto] = useState('')
@@ -175,6 +176,14 @@ export default function App(): React.JSX.Element {
   const spkStats = Object.entries(spkTime).sort((a, b) => b[1] - a[1])
   const stage = meetings.find((m) => m.id === cur?.meta.id)?.stage ?? 'new'
   const prog = cur ? progress[cur.meta.id] : undefined
+  const moveRec = (id: string, targetId: string, after: boolean): void => {
+    if (id === targetId) return
+    const rest = meetings.filter((x) => x.id !== id)
+    const at = rest.findIndex((x) => x.id === targetId) + (after ? 1 : 0)
+    const next = [...rest.slice(0, at), meetings.find((x) => x.id === id)!, ...rest.slice(at)]
+    setMeetings(next) // show it immediately, then save
+    void window.api.setOrder(next.map((x) => x.id))
+  }
   const busyOf = (id: string): boolean => progress[id]?.status === 'running' || progress[id]?.status === 'paused'
   const usedTypes = [...new Set((ins?.highlights ?? []).map((h) => h.type))]
   const kindOf = (m: Meta): string => KIND_LABEL[m.kind ?? 'meeting'] ?? 'Meeting'
@@ -196,8 +205,25 @@ export default function App(): React.JSX.Element {
           <div className="px-2 pb-1 pt-2 text-[11px] font-medium text-muted">Recordings</div>
           {meetings.length === 0 && <p className="px-2 py-3 text-xs text-muted">No recordings yet.</p>}
           {meetings.map((m) => (
-            <div key={m.id} onClick={() => void open(m.id)}
-              className={`group cursor-pointer rounded-md px-2.5 py-1.5 transition ${cur?.meta.id === m.id ? 'bg-panel2 shadow-[inset_2px_0_0_var(--c-accent)]' : 'hover:bg-panel2/60'}`}>
+            <div key={m.id} onClick={() => void open(m.id)} draggable tabIndex={0}
+              title="Drag to reorder (or Alt+↑ / Alt+↓)"
+              onDragStart={(e) => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', m.id); setDrag({ id: m.id, over: null, after: false }) }}
+              onDragOver={(e) => {
+                if (!drag.id || drag.id === m.id) return
+                e.preventDefault(); e.dataTransfer.dropEffect = 'move'
+                const r = e.currentTarget.getBoundingClientRect()
+                const after = e.clientY > r.top + r.height / 2
+                if (drag.over !== m.id || drag.after !== after) setDrag({ ...drag, over: m.id, after })
+              }}
+              onDrop={(e) => { e.preventDefault(); if (drag.id) moveRec(drag.id, m.id, drag.after); setDrag({ id: null, over: null, after: false }) }}
+              onDragEnd={() => setDrag({ id: null, over: null, after: false })}
+              onKeyDown={(e) => {
+                if (!e.altKey || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return
+                e.preventDefault()
+                const i = meetings.findIndex((x) => x.id === m.id), j = e.key === 'ArrowUp' ? i - 1 : i + 1
+                if (meetings[j]) moveRec(m.id, meetings[j].id, e.key === 'ArrowDown')
+              }}
+              className={`group cursor-pointer rounded-md px-2.5 py-1.5 transition ${drag.id === m.id ? 'opacity-40' : ''} ${drag.over === m.id ? (drag.after ? 'shadow-[inset_0_-2px_0_var(--c-accent)]' : 'shadow-[inset_0_2px_0_var(--c-accent)]') : ''} ${cur?.meta.id === m.id ? 'bg-panel2 shadow-[inset_2px_0_0_var(--c-accent)]' : 'hover:bg-panel2/60'}`}>
               <div className="flex items-center gap-1">
                 <div className={`min-w-0 flex-1 truncate text-[13.5px] ${cur?.meta.id === m.id ? 'font-medium text-fg' : 'text-fg2'}`}>{m.title}</div>
                 <button title="Delete this recording from the app" className="rounded px-1.5 text-muted opacity-0 transition hover:bg-err hover:text-err-fg group-hover:opacity-100"

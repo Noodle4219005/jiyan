@@ -81,6 +81,11 @@ function listMeetings(): (Meta & { stage: string })[] {
       return { ...m, kind, stage }
     })
     .sort((a, b) => b.created.localeCompare(a.created))
+    .sort((a, b) => { // saved manual order; recordings not in it yet (new imports) stay on top, newest first
+      const o = (readJson(join(DATA, 'order.json')) ?? []) as string[]
+      const ia = o.indexOf(a.id), ib = o.indexOf(b.id)
+      return (ia < 0 ? -1 : ia) - (ib < 0 ? -1 : ib) || 0
+    })
 }
 
 const playbackName = (m: Meta): string => (m.media === 'audio' ? 'playback.m4a' : 'playback.mp4')
@@ -472,6 +477,8 @@ function createWindow(): void {
     width: 1400, height: 900,
     webPreferences: { preload: join(__dirname, '../preload/index.js'), sandbox: false }
   })
+  ipcMain.removeHandler('meetings:order')
+  ipcMain.handle('meetings:order', (_e, ids: string[]) => writeFileSync(join(DATA, 'order.json'), JSON.stringify(ids)))
   ipcMain.removeHandler('meetings:list')
   ipcMain.handle('meetings:list', () => listMeetings())
   ipcMain.removeHandler('meeting:load')
