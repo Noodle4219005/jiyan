@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
 contextBridge.exposeInMainWorld('api', {
+  platform: process.platform,
   list: () => ipcRenderer.invoke('meetings:list'),
   load: (id: string) => ipcRenderer.invoke('meeting:load', id),
   importVideo: (kind: string) => ipcRenderer.invoke('meeting:import', kind),

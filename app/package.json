@@ -72,7 +72,8 @@
       "category": "AudioVideo",
       "icon": "build/icon.png",
       "maintainer": "Noodle4219005 <65808923+Noodle4219005@users.noreply.github.com>",
-      "synopsis": "Local notes from meeting and lecture recordings"
+      "synopsis": "Local notes from meeting and lecture recordings",
+      "artifactName": "Jiyan-${version}.${ext}"
     },
     "deb": {
       "depends": [
@@ -87,6 +88,38 @@
         "libuuid1",
         "libsecret-1-0"
       ]
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "category": "public.app-category.productivity",
+      "icon": "build/icon.png",
+      "identity": null,
+      "artifactName": "Jiyan-${version}-mac-${arch}.${ext}"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "artifactName": "Jiyan-${version}-win-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false
     }
   },
   "repository": {

@@ -6,6 +6,7 @@ Data root:    $MEETING_NOTES_DIR or ~/MeetingNotes
 import json
 import os
 import pathlib
+import sys
 
 import edits
 from mcp.server.mcpserver import MCPServer
@@ -13,7 +14,13 @@ from mcp.server.mcpserver import MCPServer
 def _root() -> pathlib.Path:
     if os.environ.get("MEETING_NOTES_DIR"):
         return pathlib.Path(os.environ["MEETING_NOTES_DIR"]).expanduser()
-    cfg = pathlib.Path("~/.config/jiyan/config.json").expanduser()  # written by the app's "Project folder" setting
+    if sys.platform == "win32":  # same folders Electron uses for app data
+        base = os.environ.get("APPDATA") or "~/AppData/Roaming"
+    elif sys.platform == "darwin":
+        base = "~/Library/Application Support"
+    else:
+        base = os.environ.get("XDG_CONFIG_HOME") or "~/.config"
+    cfg = pathlib.Path(base).expanduser() / "jiyan" / "config.json"  # written by the app's "Project folder" setting
     if cfg.exists():
         return pathlib.Path(json.loads(cfg.read_text()).get("dataDir", "~/MeetingNotes")).expanduser()
     return pathlib.Path("~/MeetingNotes").expanduser()

@@ -34,6 +34,7 @@ export type PipelineEvent = { steps?: StepInfo[]; stepPct?: number | null; id: s
 declare global {
   interface Window {
     api: {
+      platform: string
       list: () => Promise<Meta[]>
       load: (id: string) => Promise<Loaded>
       importVideo: (kind: string) => Promise<string | null>

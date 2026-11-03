@@ -26,6 +26,21 @@ To get AI summaries and chat you also need one of **Claude Code**, **Codex** or 
 
 If the AppImage does not start (a sandbox error on some Ubuntu versions), run it with `--no-sandbox`.
 
+## Install (Windows and macOS) — experimental
+
+Windows and macOS builds come from the automated build (GitHub Actions) and have **not been tested by the author on real
+machines yet**. They are unsigned, so the system will warn you. Please open an issue when something does not work.
+
+**You need:** `ffmpeg`, `uv`, about 3 GB of free disk, and (for AI features) Claude Code, Codex or pi, signed in.
+
+| | macOS (`Jiyan-*-mac-arm64.dmg` for Apple Silicon, `-x64.dmg` for Intel) | Windows 10/11 (`Jiyan-*-win-x64.exe`) |
+|---|---|---|
+| Tools | `brew install ffmpeg uv` | `winget install --id Gyan.FFmpeg` and `winget install --id astral-sh.uv` (restart Jiyan afterwards) |
+| First open | Drag Jiyan to Applications. macOS says the app is damaged or from an unidentified developer: run `xattr -cr /Applications/Jiyan.app`, or right-click the app and choose **Open** | SmartScreen shows “Windows protected your PC”: click **More info**, then **Run anyway** |
+| Differences | – | **Pause** is not available (cancel works). |
+
+After that, steps 3 and 4 above are the same on every system.
+
 ## Use it from Claude Code / Codex
 
 Open **Settings → Use from Claude Code / Codex**, copy the command for your tool and run it once in a terminal.

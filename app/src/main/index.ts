@@ -1,15 +1,36 @@
 import { app, BrowserWindow, dialog, ipcMain, protocol } from 'electron'
-import { spawn } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import { copyFileSync, cpSync, createReadStream, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { Readable } from 'node:stream'
 import { homedir } from 'node:os'
 import { basename, extname, join, resolve } from 'node:path'
 
+const IS_WIN = process.platform === 'win32'
+const IS_MAC = process.platform === 'darwin'
+
+// GUI apps started from a dock/launcher/start menu often miss the PATH of the user's shell, so `uv`, `ffmpeg` and the AI CLIs
+// (installed to ~/.local/bin, Homebrew, ~/.cargo/bin ...) would look "not installed". Add the usual places, and the login shell's PATH.
+function fixPath(): void {
+  if (IS_WIN) return
+  const home = homedir()
+  const extra = ['/opt/homebrew/bin', '/opt/homebrew/sbin', '/usr/local/bin', join(home, '.local', 'bin'), join(home, '.cargo', 'bin'), join(home, '.claude', 'local'), join(home, '.npm-global', 'bin')]
+  let shellPath = ''
+  try {
+    const out = execFileSync(process.env.SHELL || (IS_MAC ? '/bin/zsh' : '/bin/sh'), ['-ilc', 'printf "__P__%s__P__" "$PATH"'], { timeout: 4000, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+    shellPath = /__P__(.*)__P__/s.exec(out)?.[1] ?? ''
+  } catch { /* no login shell PATH: fall back to the usual places */ }
+  const seen = new Set<string>()
+  process.env.PATH = [...shellPath.split(':'), ...(process.env.PATH ?? '').split(':'), ...extra].filter((d) => d && !seen.has(d) && !!seen.add(d)).join(':')
+}
+// Per-user data folder for the pipeline (kept at the old Linux location so existing installs keep their Python environment and models).
+const appDataHome = (): string => (IS_WIN ? (process.env.LOCALAPPDATA ?? join(homedir(), 'AppData', 'Local')) : IS_MAC ? join(homedir(), 'Library', 'Application Support') : join(homedir(), '.local', 'share'))
+const pyBin = (root: string): string => (IS_WIN ? join(root, '.venv', 'Scripts', 'python.exe') : join(root, '.venv', 'bin', 'python'))
+
 // Python pipeline: in dev it is the repo root; packaged, it ships in resources/ and is copied to a writable folder
 // (it needs its own .venv and models next to the scripts, and an AppImage is read-only).
 const DEV = !app.isPackaged
 const PIPE_SRC = DEV ? resolve(app.getAppPath(), '..') : join(process.resourcesPath, 'pipeline')
-const ROOT = DEV ? PIPE_SRC : join(homedir(), '.local', 'share', 'jiyan', 'pipeline')
+const ROOT = DEV ? PIPE_SRC : join(appDataHome(), 'jiyan', 'pipeline')
 function ensurePipeline(): void {
   if (DEV) return
   mkdirSync(ROOT, { recursive: true })
@@ -21,7 +42,7 @@ function ensurePipeline(): void {
 const readJson = (p: string) => (existsSync(p) ? JSON.parse(readFileSync(p, 'utf8')) : null)
 
 // Global config (shared with mcp_server.py): where projects live. Kept outside the data dir so it can be relocated.
-const CFG_DIR = join(homedir(), '.config', 'jiyan')
+const CFG_DIR = join(app.getPath('appData'), 'jiyan') // ~/.config/jiyan · ~/Library/Application Support/jiyan · %APPDATA%\\jiyan
 const CFG = join(CFG_DIR, 'config.json')
 mkdirSync(CFG_DIR, { recursive: true })
 let DATA: string = (readJson(CFG)?.dataDir as string | undefined) ?? join(homedir(), 'MeetingNotes')
@@ -101,7 +122,7 @@ const cancelStep = new Map<string, string>()
 function runCmd(cmd: string, args: string[], opts: { cwd?: string; input?: string; env?: NodeJS.ProcessEnv; id?: string; step?: string; onLine?: (l: string) => void } = {}): Promise<string> {
   return new Promise((ok, fail) => {
     // tracked jobs run in their own process group so pause/cancel reach uv's python child too
-    const p = spawn(cmd, args, { cwd: opts.cwd, env: { ...process.env, ...opts.env }, detached: !!opts.id })
+    const p = spawn(cmd, args, { cwd: opts.cwd, env: { ...process.env, ...opts.env }, detached: !!opts.id && !IS_WIN, windowsHide: true })
     if (opts.id && p.pid) jobs.set(opts.id, { pid: p.pid, step: opts.step ?? '', paused: false })
     let out = '', err = ''
     let buf = ''
@@ -133,11 +154,17 @@ type StepInfo = { name: string; state: 'pending' | 'running' | 'done'; start?: n
 const runState = new Map<string, StepInfo[]>()
 const running = new Set<string>()
 
+/** Stop a job and everything it started: POSIX process group, or taskkill /T on Windows. */
+function killTree(pid: number, resume: boolean): void {
+  if (IS_WIN) { try { spawn('taskkill', ['/pid', String(pid), '/T', '/F'], { windowsHide: true, stdio: 'ignore' }) } catch { /* gone */ } return }
+  try { if (resume) process.kill(-pid, 'SIGCONT'); process.kill(-pid, 'SIGKILL') } catch { /* already gone */ }
+}
+
 function cancelJob(id: string): void {
   const j = jobs.get(id)
   if (!j) return
   cancelled.add(id); cancelStep.set(id, j.step)
-  try { if (j.paused) process.kill(-j.pid, 'SIGCONT'); process.kill(-j.pid, 'SIGKILL') } catch { /* already gone */ }
+  killTree(j.pid, j.paused)
 }
 
 async function runPipeline(win: BrowserWindow, id: string): Promise<void> {
@@ -237,13 +264,13 @@ const SEG_DIR = join(MODELS, 'sherpa-onnx-pyannote-segmentation-3-0')
 const EMB = join(MODELS, '3dspeaker_speech_eres2net_base_sv_zh-cn_3dspeaker_16k.onnx')
 const WHISPER_CACHE = join(process.env.HF_HOME ?? join(homedir(), '.cache', 'huggingface'), 'hub', 'models--mobiuslabsgmbh--faster-whisper-large-v3-turbo')
 const probe = (cmd: string, args: string[]): Promise<string | null> => runCmd(cmd, args).then((o) => o.split('\n')[0].trim() || 'ok', () => null)
-const have = (bin: string): Promise<boolean> => runCmd('sh', ['-c', `command -v ${bin}`]).then(() => true, () => false)
+const have = (bin: string): Promise<boolean> => (IS_WIN ? runCmd('where', [bin]) : runCmd('sh', ['-c', `command -v ${bin}`])).then(() => true, () => false)
 
 async function setupStatus(): Promise<object> {
   const [uv, ffmpeg, claude, codex, pi] = await Promise.all([probe('uv', ['--version']), probe('ffmpeg', ['-version']), have('claude'), have('codex'), have('pi')])
   return {
     uv, ffmpeg, root: ROOT,
-    venv: existsSync(join(ROOT, '.venv', 'bin', 'python')),
+    venv: existsSync(pyBin(ROOT)),
     speakerModels: existsSync(join(SEG_DIR, 'model.onnx')) && existsSync(EMB),
     whisper: existsSync(WHISPER_CACHE),
     harness: { claude, codex, pi },
@@ -700,7 +727,7 @@ function createWindow(): void {
   ipcMain.removeHandler('meeting:pause')
   ipcMain.handle('meeting:pause', (_e, id: string) => {
     const j = jobs.get(id)
-    if (!j || j.paused) return
+    if (!j || j.paused || IS_WIN) return // Windows has no SIGSTOP: pausing is not offered there
     process.kill(-j.pid, 'SIGSTOP'); j.paused = true
     const s = runState.get(id)?.find((x) => x.state === 'running'); if (s) s.pauseStart = Date.now()
     win.webContents.send('pipeline', { id, step: j.step, status: 'paused', steps: runState.get(id) })
@@ -737,9 +764,11 @@ function createWindow(): void {
 }
 
 void app.whenReady().then(() => {
+  fixPath()
   ensurePipeline()
   protocol.handle('media', (req) => {
-    const path = decodeURIComponent(new URL(req.url).pathname)
+    let path = decodeURIComponent(new URL(req.url).pathname)
+    if (IS_WIN && /^\/[A-Za-z]:/.test(path)) path = path.slice(1) // /C:/Users/... -> C:/Users/...
     console.log('[media]', req.method, req.headers.get('range') ?? '-', path)
     const size = statSync(path).size
     const type = path.endsWith('.jpg') ? 'image/jpeg' : path.endsWith('.mp4') ? 'video/mp4' : path.endsWith('.m4a') ? 'audio/mp4' : 'application/octet-stream'

@@ -19,7 +19,10 @@ export const tag = (c: string): React.CSSProperties => ({ background: c, color: 
 export const SPK_COLOR = ['#2f6fb5', '#c2406b', '#2f8f5f', '#d99a1e', '#7b5aa6', '#d2692e']
 export const spkColor = (s?: string): string => SPK_COLOR[Number((s ?? 'S0').slice(1)) % SPK_COLOR.length]
 export const mmss = (t: number): string => `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(Math.floor(t % 60)).padStart(2, '0')}`
-export const mediaUrl = (path: string): string => `media://local${encodeURI(path)}`
+export const mediaUrl = (path: string): string => {
+  const p = path.replace(/\\/g, '/') // Windows: C:\\dir\\f.mp4 -> /C:/dir/f.mp4
+  return `media://local${encodeURI(p.startsWith('/') ? p : `/${p}`)}`
+}
 export const thumbUrl = (th: Thumbs, t: number): string =>
   mediaUrl(`${th.dir}/${String(Math.floor(t / th.step) + 1).padStart(5, '0')}.jpg`)
 

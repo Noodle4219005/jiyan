@@ -17,6 +17,7 @@ const Cmd = ({ c }: { c: string }): React.JSX.Element => (
   </code>
 )
 
+const OS = window.api.platform
 export const setupReady = (s: SetupStatus): boolean => !!s.uv && !!s.ffmpeg && s.venv && s.speakerModels && s.whisper
 
 export default function SetupDialog(p: { onClose: () => void }): React.JSX.Element {
@@ -39,10 +40,11 @@ export default function SetupDialog(p: { onClose: () => void }): React.JSX.Eleme
 
         <div className="mt-3 divide-y divide-line">
           <Row ok={!!st.uv} title="uv (Python manager)">
-            {st.uv ? st.uv : <>Not found. Install it with:<Cmd c="curl -LsSf https://astral.sh/uv/install.sh | sh" /></>}
+            {st.uv ? st.uv : <>Not found. Install it with:<Cmd c={OS === 'darwin' ? 'brew install uv' : OS === 'win32' ? 'winget install --id astral-sh.uv' : 'curl -LsSf https://astral.sh/uv/install.sh | sh'} /></>}
           </Row>
           <Row ok={!!st.ffmpeg} title="ffmpeg (audio and video)">
-            {st.ffmpeg ? 'Installed' : <>Not found. Install it with your package manager:<Cmd c="sudo pacman -S ffmpeg" /><Cmd c="sudo apt install ffmpeg" /></>}
+            {st.ffmpeg ? 'Installed' : <>Not found. Install it with your package manager, then restart Jiyan:
+              {OS === 'darwin' ? <Cmd c="brew install ffmpeg" /> : OS === 'win32' ? <Cmd c="winget install --id Gyan.FFmpeg" /> : <><Cmd c="sudo pacman -S ffmpeg" /><Cmd c="sudo apt install ffmpeg" /></>}</>}
           </Row>
           <Row ok={st.venv} title="Python environment">{st.venv ? 'Ready' : 'Will be installed (~500 MB)'}</Row>
           <Row ok={st.speakerModels} title="Speaker models">{st.speakerModels ? 'Ready' : 'Will be downloaded (~45 MB)'}</Row>

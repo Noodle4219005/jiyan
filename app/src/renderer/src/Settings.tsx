@@ -57,7 +57,9 @@ export default function SettingsDialog(p: { onClose: () => void; onFolderChanged
           <h3 className="font-serif text-[16px] font-semibold tracking-wide">Use from Claude Code / Codex</h3>
           <p className="mt-0.5 text-xs text-muted">Run one of these once in a terminal so the agent can search and read your recordings.</p>
           {[['Claude Code', 'claude'], ['Codex', 'codex']].map(([label, bin]) => {
-            const c = `${bin} mcp add jiyan -- uv run --project ${root} python ${root}/mcp_server.py`
+            const q = (s: string): string => (/\s/.test(s) ? `"${s}"` : s) // paths such as 'Application Support' need quotes
+            const sep = window.api.platform === 'win32' ? '\\' : '/'
+            const c = `${bin} mcp add jiyan -- uv run --project ${q(root)} python ${q(root + sep + 'mcp_server.py')}`
             return (
               <div key={bin} className="mt-2">
                 <div className="text-xs text-muted">{label}</div>

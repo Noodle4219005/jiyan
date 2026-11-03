@@ -1,5 +1,5 @@
 """Pluggable LLM harness: prompt on stdin -> text on stdout. Config via MEETING_HARNESS (JSON)."""
-import json, os, re, shlex, subprocess, sys, tempfile, time
+import json, os, re, shlex, shutil, subprocess, sys, tempfile, time
 
 PRESETS = ("claude", "codex", "pi", "custom")
 # Lean claude call: no tools/slash commands/MCP, no user settings (hooks, CLAUDE.md) -> ~0.6k instead of ~33k tokens of overhead per call.
@@ -47,6 +47,7 @@ def run(prompt: str, cfg: dict | None = None, timeout: int = 900, cwd: str | Non
             raise SystemExit("custom harness: empty command")
     else:
         raise SystemExit(f"unknown harness {kind!r}")
+    cmd[0] = shutil.which(cmd[0]) or cmd[0]  # Windows: finds claude.exe / codex.cmd via PATHEXT
     t0 = time.time()
     r = subprocess.run(cmd, input=prompt, capture_output=True, text=True, timeout=timeout, cwd=cwd)
     ms = int((time.time() - t0) * 1000)

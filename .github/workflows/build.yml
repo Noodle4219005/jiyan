@@ -1,0 +1,88 @@
+name: build
+
+# Builds the installers for Linux, Windows and macOS.
+#  - Run it by hand (Actions -> build -> Run workflow) to get the installers as downloadable artifacts only.
+#  - Pushing a tag like v0.1.3 also attaches them to a GitHub pre-release.
+# The Windows and macOS installers are NOT code-signed (see README).
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest,  flags: '--linux' }
+          - { os: windows-latest, flags: '--win' }
+          - { os: macos-latest,   flags: '--mac' }
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'   # no signing certificates in CI
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+
+      # The Python half: does the lock file install on this OS, and do the helper scripts import and run?
+      - name: Python environment and smoke test
+        run: |
+          uv sync --frozen
+          uv run python -c "import faster_whisper, sherpa_onnx, mcp; print('imports ok')"
+          uv run python tests/smoke_mcp.py
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install app dependencies and type-check
+        working-directory: app
+        run: |
+          npm ci
+          npm run typecheck
+
+      - name: Build installers
+        working-directory: app
+        run: npx electron-vite build && npx electron-builder ${{ matrix.flags }} --publish never
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installers-${{ matrix.os }}
+          if-no-files-found: error
+          path: |
+            app/dist/Jiyan-*.AppImage
+            app/dist/Jiyan-*.deb
+            app/dist/Jiyan-*.exe
+            app/dist/Jiyan-*.dmg
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Publish as a pre-release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          cd dist
+          sha256sum Jiyan-* > SHA256SUMS
+          if gh release view "$TAG" -R "$REPO" >/dev/null 2>&1; then
+            gh release upload "$TAG" -R "$REPO" --clobber Jiyan-* SHA256SUMS
+          else
+            gh release create "$TAG" -R "$REPO" --prerelease --title "Jiyan ${TAG#v}" \
+              --notes "Automated build. Windows and macOS installers are unsigned experimental builds; see the README for how to open them." \
+              Jiyan-* SHA256SUMS
+          fi

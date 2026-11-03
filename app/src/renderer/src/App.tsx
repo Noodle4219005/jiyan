@@ -314,7 +314,7 @@ export default function App(): React.JSX.Element {
               <Card title={prog.status === 'paused' ? 'Paused' : 'Processing…'} hint="You can keep browsing other recordings while this runs."
                 right={<div className="flex gap-2">
                   {prog.status === 'running'
-                    ? <button className="btn" onClick={() => void window.api.pause(cur.meta.id)}>Pause</button>
+                    ? window.api.platform !== 'win32' && <button className="btn" onClick={() => void window.api.pause(cur.meta.id)}>Pause</button>
                     : <button className="btn btn-primary" onClick={() => void window.api.resume(cur.meta.id)}>Resume</button>}
                   <button className="btn" onClick={() => void window.api.cancel(cur.meta.id)}>Cancel</button>
                 </div>}>
