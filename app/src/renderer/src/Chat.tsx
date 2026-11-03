@@ -38,7 +38,7 @@ export default function Chat(p: { id: string | null; title: string; ready: boole
   useEffect(() => { setErr(''); setMsgs([]); void window.api.chatLoad(p.id, scope).then(setMsgs) }, [p.id, scope])
   useEffect(() => { end.current?.scrollIntoView({ behavior: 'smooth' }) }, [msgs, busy, open])
   useEffect(() => {
-    const h = (e: KeyboardEvent): void => { if ((e.metaKey || e.ctrlKey) && e.key === '/') { e.preventDefault(); setOpen((o) => !o) } if (e.key === 'Escape') setOpen(false) }
+    const h = (e: KeyboardEvent): void => { if (e.isComposing || e.keyCode === 229) return /* Esc/Enter belong to the input method while composing */; if ((e.metaKey || e.ctrlKey) && e.key === '/') { e.preventDefault(); setOpen((o) => !o) } if (e.key === 'Escape') setOpen(false) }
     window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h)
   }, [])
 
