@@ -205,10 +205,17 @@ export default function App(): React.JSX.Element {
         {!cur && (
           <div className="mx-auto mt-24 max-w-md text-center">
             <h1 className="text-xl font-semibold">Turn recordings into notes</h1>
-            <ol className="mt-5 space-y-3 text-left text-sm text-slate-300 [&_li]:grid [&_li]:grid-cols-[1.5rem_1fr]">
-              <li><b className="mr-2 text-accent">1</b>Pick the type and click <i>Import video or audio</i>.</li>
-              <li><b className="mr-2 text-accent">2</b>The app transcribes, finds who spoke and writes an AI summary.</li>
-              <li><b className="mr-2 text-accent">3</b>Browse the timeline, highlights and subtitles; export or ask Claude Code / Codex via MCP.</li>
+            <ol className="mt-6 space-y-3 text-left text-sm text-slate-300">
+              {[
+                <>Pick the type, then click <i>Import video or audio</i>.</>,
+                <>The app transcribes, finds who spoke and writes an AI summary.</>,
+                <>Browse the timeline, highlights and subtitles; export, or ask Claude Code / Codex through MCP.</>
+              ].map((t, k) => (
+                <li key={k} className="flex items-start gap-3">
+                  <span className="mt-px grid size-5 flex-none place-items-center rounded-full bg-accent/20 text-xs font-semibold text-blue-300">{k + 1}</span>
+                  <span className="min-w-0 flex-1 leading-relaxed">{t}</span>
+                </li>
+              ))}
             </ol>
           </div>
         )}
