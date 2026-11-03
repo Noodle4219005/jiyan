@@ -1,5 +1,5 @@
 import type React from 'react'
-import { ArrowLeftRight, AudioLines, ChevronLeft, ChevronRight, Pencil, Plus, RotateCw, Settings, Sparkles, X } from 'lucide-react'
+import { ArrowLeftRight, ChevronLeft, ChevronRight, Pencil, Plus, RotateCw, Settings, Sparkles, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Chat from './Chat'
 import CueList from './CueList'
@@ -10,7 +10,7 @@ import SetupDialog, { setupReady } from './SetupDialog'
 import UsageDialog, { fmtCost, fmtTok } from './UsageDialog'
 import { cueLabel, toCues, toSrt, toVtt, type SubOpts } from './subtitles'
 import SubtitlesPanel, { slug } from './SubtitlesPanel'
-import Timeline, { KIND_LABEL, TYPE_COLOR, TYPE_LABEL, mediaUrl, mmss, renderTimelinePng, spkColor, thumbUrl, tint } from './Timeline'
+import Timeline, { KIND_LABEL, TYPE_COLOR, TYPE_LABEL, mediaUrl, mmss, renderTimelinePng, spkColor, tag, thumbUrl } from './Timeline'
 import type { Insights, Loaded, Meta, PipelineEvent, UsageSummary } from './types'
 
 const STAGE: Record<string, string> = { new: 'Not processed', transcribed: 'Transcribed', diarized: 'Speakers found', done: 'Ready' }
@@ -18,7 +18,7 @@ const TABS = [['summary', 'Summary'], ['transcript', 'Transcript'], ['highlights
 const KINDS = [['meeting', 'Meeting'], ['lecture', 'Lecture / course'], ['recording', 'Other recording']] as const
 
 const Chip = ({ color, children }: { color: string; children: React.ReactNode }): React.JSX.Element => (
-  <span className="rounded-full px-2 py-px text-[11px] font-medium" style={tint(color)}>{children}</span>
+  <span className="rounded-full px-2 py-px text-[11px] font-semibold" style={tag(color)}>{children}</span>
 )
 const Badge = ({ children }: { children: React.ReactNode }): React.JSX.Element => (
   <span className="rounded border border-line px-1.5 py-px text-[10px] uppercase tracking-wide text-muted">{children}</span>
@@ -182,7 +182,7 @@ export default function App(): React.JSX.Element {
       {/* ───────── sidebar ───────── */}
       <aside className="flex min-h-0 flex-col border-r border-line bg-side">
         <div className="space-y-2.5 p-3">
-          <div className="flex items-center gap-2 px-1 pb-1 text-sm font-semibold"><AudioLines className="size-4 text-accent" />Jiyan <span className="font-normal text-muted">記言</span></div>
+          <div className="flex items-center gap-2 px-1 pb-1"><span className="grid size-6 place-items-center rounded-[5px] bg-accent font-serif text-[14px] font-bold leading-none text-white">言</span><span className="font-serif text-[15px] font-semibold tracking-wide">記言 <span className="font-sans text-xs font-normal text-muted">Jiyan</span></span></div>
           <label className="block text-[11px] text-muted">What are you importing?
             <select value={kind} onChange={(e) => setKind(e.target.value)}
               className="field mt-1 w-full bg-panel">
@@ -227,7 +227,7 @@ export default function App(): React.JSX.Element {
       <main className="@container min-w-0 overflow-auto">
         {!cur && (
           <div className="mx-auto mt-24 max-w-md text-center">
-            <h1 className="text-xl font-semibold">Turn recordings into notes</h1>
+            <h1 className="font-serif text-2xl font-semibold tracking-wide">記言 · Turn recordings into notes</h1>
             <ol className="mt-6 space-y-3 text-left text-sm text-fg2">
               {[
                 <>Pick the type, then click <i>Import video or audio</i>.</>,
@@ -235,7 +235,7 @@ export default function App(): React.JSX.Element {
                 <>Browse the timeline, highlights and subtitles; export, or ask Claude Code / Codex through MCP.</>
               ].map((t, k) => (
                 <li key={k} className="flex items-start gap-3">
-                  <span className="mt-px grid size-5 flex-none place-items-center rounded-full bg-accent/15 text-xs font-semibold text-accent">{k + 1}</span>
+                  <span className="mt-px grid size-5 flex-none place-items-center rounded-full bg-accent/15 text-xs font-semibold text-link">{k + 1}</span>
                   <span className="min-w-0 flex-1 leading-relaxed">{t}</span>
                 </li>
               ))}
@@ -248,7 +248,7 @@ export default function App(): React.JSX.Element {
             <div className="group flex items-center gap-3">
               {editing === null ? (
                 <>
-                  <h1 className="min-w-0 cursor-text truncate text-[28px] font-bold leading-tight tracking-tight" title="Click to rename" onClick={() => setEditing(cur.meta.title)}>{cur.meta.title}</h1>
+                  <h1 className="min-w-0 cursor-text truncate font-serif text-[30px] font-bold leading-tight" title="Click to rename" onClick={() => setEditing(cur.meta.title)}>{cur.meta.title}</h1>
                   <Pencil className="size-4 flex-none text-muted opacity-0 transition group-hover:opacity-100" />
                   <span className="flex-none text-xs text-muted">{kindOf(cur.meta)}</span>
                   {ins?.title && ins.title !== cur.meta.title && (
@@ -259,7 +259,7 @@ export default function App(): React.JSX.Element {
                 <input autoFocus value={editing} onChange={(e) => setEditing(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') void saveTitle(editing); if (e.key === 'Escape') setEditing(null) }}
                   onBlur={() => void saveTitle(editing)}
-                  className="min-w-0 flex-1 border-b-2 border-accent bg-transparent text-[28px] font-bold leading-tight tracking-tight outline-none" />
+                  className="min-w-0 flex-1 border-b-2 border-accent bg-transparent font-serif text-[30px] font-bold leading-tight outline-none" />
               )}
             </div>
 
@@ -396,7 +396,7 @@ export default function App(): React.JSX.Element {
                     {Object.entries(cur.merge ?? {}).map(([from, into]) => (
                       <p key={from} className="w-full text-xs text-muted">
                         {from} is treated as the same person as {names[into] || into}.{' '}
-                        <button className="text-accent hover:underline" onClick={async () => { await window.api.unmergeSpeaker(cur.meta.id, from); await reload() }}>Split back</button>
+                        <button className="text-link hover:underline" onClick={async () => { await window.api.unmergeSpeaker(cur.meta.id, from); await reload() }}>Split back</button>
                       </p>
                     ))}
                   </div>

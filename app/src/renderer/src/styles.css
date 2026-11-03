@@ -3,49 +3,51 @@
 /* Notion-like palette. Light is the default; dark follows the system or the Settings choice. */
 :root {
   color-scheme: light;
-  --c-bg: #ffffff;       --c-side: #f6f5f2;     --c-panel: #ffffff;   --c-panel2: #efede9;
-  --c-line: #e1dfda;     --c-fg: #2a2926;       --c-fg2: #504e49;     --c-muted: #6f6d67;
-  --c-accent: #1f6fcf;   --c-sel: #e6effb;
-  --c-info: #e8f1fa;     --c-info-fg: #174f80;
-  --c-err: #fcecea;      --c-err-fg: #9a2c28;
-  --c-ok: #e9f3ec;       --c-ok-fg: #27613f;    --c-okc: #197a58;
-  --c-warn: #fbf1d9;     --c-warn-fg: #7a5a0e;  --c-warnc: #9a6009;
-  --c-overlay: rgba(25, 24, 22, .42);
+  /* 宣紙 paper · 墨 ink · 朱砂 cinnabar (the seal red of a 史官's record) */
+  --c-bg: #fcfaf4;       --c-side: #f4efe3;     --c-panel: #fcfaf4;   --c-panel2: #ebe4d4;
+  --c-line: #e2dbc9;     --c-fg: #2b2622;       --c-fg2: #564e45;     --c-muted: #6a6153;
+  --c-accent: #b43c28;   --c-link: #b43c28;   --c-sel: #f6e7de;
+  --c-info: #e6eeec;     --c-info-fg: #285655;
+  --c-err: #f9e5e1;      --c-err-fg: #962a22;
+  --c-ok: #e8efe3;       --c-ok-fg: #2d5a37;    --c-okc: #3c7a4b;
+  --c-warn: #f8eed0;     --c-warn-fg: #765710;  --c-warnc: #94620a;
+  --c-overlay: rgba(36, 30, 24, .45);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --c-bg: #191919;     --c-side: #202020;     --c-panel: #191919;   --c-panel2: #2a2a2a;
-    --c-line: #2f2f2f;   --c-fg: #e8e8e6;       --c-fg2: #b5b5b3;     --c-muted: #8b8b89;
-    --c-accent: #2f8fe8; --c-sel: #1f3a4d;
-    --c-info: #1c3445;   --c-info-fg: #8ec9f0;
-    --c-err: #432525;    --c-err-fg: #f2b8b5;
-    --c-ok: #1f3a2c;     --c-ok-fg: #a3dfbc;    --c-okc: #4dab9a;
-    --c-warn: #3b3220;   --c-warn-fg: #ecca7e;  --c-warnc: #d9a441;
+    --c-bg: #1b1917;     --c-side: #23201d;     --c-panel: #1b1917;   --c-panel2: #2e2a26;
+    --c-line: #38332e;   --c-fg: #ece6da;       --c-fg2: #bfb7a8;     --c-muted: #918978;
+    --c-accent: #c24c36; --c-link: #ee8a73; --c-sel: #3a2a25;
+    --c-info: #1f3434;   --c-info-fg: #9ccbc7;
+    --c-err: #4a2623;    --c-err-fg: #f0b9b1;
+    --c-ok: #243729;     --c-ok-fg: #aad5ae;    --c-okc: #74b383;
+    --c-warn: #3d3221;   --c-warn-fg: #e8c97d;  --c-warnc: #d9a441;
     --c-overlay: rgba(0, 0, 0, .6);
   }
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --c-bg: #191919;     --c-side: #202020;     --c-panel: #191919;   --c-panel2: #2a2a2a;
-  --c-line: #2f2f2f;   --c-fg: #e8e8e6;       --c-fg2: #b5b5b3;     --c-muted: #8b8b89;
-  --c-accent: #2f8fe8; --c-sel: #1f3a4d;
-  --c-info: #1c3445;   --c-info-fg: #8ec9f0;
-  --c-err: #432525;    --c-err-fg: #f2b8b5;
-  --c-ok: #1f3a2c;     --c-ok-fg: #a3dfbc;    --c-okc: #4dab9a;
-  --c-warn: #3b3220;   --c-warn-fg: #ecca7e;  --c-warnc: #d9a441;
+  --c-bg: #1b1917;     --c-side: #23201d;     --c-panel: #1b1917;   --c-panel2: #2e2a26;
+  --c-line: #38332e;   --c-fg: #ece6da;       --c-fg2: #bfb7a8;     --c-muted: #918978;
+  --c-accent: #c24c36; --c-link: #ee8a73; --c-sel: #3a2a25;
+  --c-info: #1f3434;   --c-info-fg: #9ccbc7;
+  --c-err: #4a2623;    --c-err-fg: #f0b9b1;
+  --c-ok: #243729;     --c-ok-fg: #aad5ae;    --c-okc: #74b383;
+  --c-warn: #3d3221;   --c-warn-fg: #e8c97d;  --c-warnc: #d9a441;
   --c-overlay: rgba(0, 0, 0, .6);
 }
 
 @theme inline {
   --color-bg: var(--c-bg);       --color-side: var(--c-side);   --color-panel: var(--c-panel);   --color-panel2: var(--c-panel2);
   --color-line: var(--c-line);   --color-fg: var(--c-fg);       --color-fg2: var(--c-fg2);       --color-muted: var(--c-muted);
-  --color-accent: var(--c-accent); --color-sel: var(--c-sel);
+  --color-accent: var(--c-accent); --color-link: var(--c-link); --color-sel: var(--c-sel);
   --color-info: var(--c-info);   --color-info-fg: var(--c-info-fg);
   --color-err: var(--c-err);     --color-err-fg: var(--c-err-fg);
   --color-ok: var(--c-ok);       --color-ok-fg: var(--c-ok-fg); --color-okc: var(--c-okc);
   --color-warn: var(--c-warn);   --color-warn-fg: var(--c-warn-fg); --color-warnc: var(--c-warnc);
   --color-overlay: var(--c-overlay);
+  --font-serif: Georgia, "Noto Serif", "Times New Roman", "LXGW WenKai TC", "LXGW WenKai", "LXGW WenKai Mono TC", "Noto Serif CJK TC", "Source Han Serif TC", "Songti TC", "STSong", "PMingLiU", "MingLiU", "DFKai-SB", KaiTi, serif;
   --font-sans: ui-sans-serif, -apple-system, "Segoe UI", Inter, "Noto Sans CJK TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
 }
 
@@ -65,3 +67,18 @@ body { @apply bg-bg font-sans text-[14px] text-fg antialiased; }
   .field { @apply rounded-md border border-line bg-transparent px-2.5 py-1.5 text-sm text-fg outline-none transition placeholder:text-muted focus:border-accent; }
 }
 @keyframes slide { 0% { margin-left: -33%; } 100% { margin-left: 100%; } }
+
+/* Dropdowns: one look everywhere (unlayered on purpose, so it wins over per-element utility classes). */
+select {
+  appearance: none; -webkit-appearance: none;
+  background-color: var(--c-panel); color: var(--c-fg);
+  border: 1px solid var(--c-line); border-radius: 6px;
+  padding: .32rem 1.9rem .32rem .65rem; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a8172' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right .6rem center; background-size: 12px;
+  transition: border-color .15s, background-color .15s;
+}
+select:hover { border-color: color-mix(in srgb, var(--c-fg) 28%, var(--c-line)); }
+select:focus, select:focus-visible { border-color: var(--c-accent); outline: none; }
+select:disabled { opacity: .5; cursor: default; }
+option { background: var(--c-panel); color: var(--c-fg); }

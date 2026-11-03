@@ -16,7 +16,7 @@ function Rich({ text, onSeek }: { text: string; onSeek?: (t: number) => void }):
         if (!IS_TS.test(part) || !onSeek) return <span key={i}>{part}</span>
         const n = part.slice(1, -1).split(':').map(Number)
         const sec = n.length === 3 ? n[0] * 3600 + n[1] * 60 + n[2] : n[0] * 60 + n[1]
-        return <button key={i} onClick={() => onSeek(sec)} className="mx-0.5 rounded bg-accent/10 px-1 font-mono text-xs text-accent hover:bg-accent/20">{part.slice(1, -1)}</button>
+        return <button key={i} onClick={() => onSeek(sec)} className="mx-0.5 rounded bg-accent/10 px-1 font-mono text-xs text-link hover:bg-accent/20">{part.slice(1, -1)}</button>
       })}
     </>
   )

@@ -40,7 +40,7 @@ function AiPanel(p: {
   const list = p.suggestions
   return (
     <div className="mb-4 rounded-xl border border-line bg-panel2 p-3">
-      <div className="flex items-center gap-1.5 text-sm font-semibold"><Sparkles className="size-4 text-accent" />AI proofread</div>
+      <div className="flex items-center gap-1.5 text-sm font-semibold"><Sparkles className="size-4 text-link" />AI proofread</div>
       <p className="mt-0.5 text-xs text-muted">The AI looks for mis-heard words and broken terms and proposes fixes. Nothing changes until you accept it. A long recording takes a few minutes.</p>
       <div className="mt-2 flex items-center gap-2">
         <input className={input} value={terms} onChange={(e) => setTerms(e.target.value)}

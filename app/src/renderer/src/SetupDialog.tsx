@@ -13,7 +13,7 @@ const Row = ({ ok, title, children }: { ok: boolean; title: string; children?: R
 const Cmd = ({ c }: { c: string }): React.JSX.Element => (
   <code className="mt-1 flex items-center gap-2 rounded-md border border-line bg-bg px-2 py-1 text-[11px] text-fg2">
     <span className="min-w-0 flex-1 select-all break-all">{c}</span>
-    <button className="flex-none text-accent hover:underline" onClick={() => void navigator.clipboard.writeText(c)}>Copy</button>
+    <button className="flex-none text-link hover:underline" onClick={() => void navigator.clipboard.writeText(c)}>Copy</button>
   </code>
 )
 
